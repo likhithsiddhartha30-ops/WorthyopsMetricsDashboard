@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard · WorthyOps</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ================= Sidebar ================= -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-mark">W</span>
+        <span>WorthyOps<small>Team</small></span>
+      </div>
+      <nav class="nav" aria-label="Main">
+        <div class="nav-label">Me</div>
+        <a href="#overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          My dashboard
+        </a>
+        <a href="#log">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Log activity
+        </a>
+        <a href="#entries">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          My entries
+        </a>
+        <a href="#account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+          Account
+        </a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="user-chip">
+          <span class="avatar" data-user-initials></span>
+          <div class="who"><div class="name" data-user-name></div><div class="role">Team member</div></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-sm" data-logout style="flex:1">Log out</button>
+          <button class="icon-btn" data-theme-toggle type="button" style="width:30px;height:30px"></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= Main ================= -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" type="button" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div>
+          <h1 id="page-title">My dashboard</h1>
+          <div class="page-sub" id="page-sub"></div>
+        </div>
+        <div class="filters" id="filters">
+          <label class="sr-only" for="f-range">Date range</label>
+          <select id="f-range" class="select">
+            <option value="7d">Last 7 days</option>
+            <option value="30d" selected>Last 30 days</option>
+            <option value="mtd">Month to date</option>
+            <option value="lastmonth">Last month</option>
+            <option value="90d">Last 90 days</option>
+            <option value="ytd">Year to date</option>
+            <option value="all">All time</option>
+          </select>
+          <a class="btn btn-primary" href="#log">+ Log today</a>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- ===== Overview ===== -->
+        <section class="view" id="view-overview">
+          <div class="section-note" id="today-note" hidden></div>
+
+          <div class="kpi-grid" id="kpis"></div>
+
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">My conversion rates</div><div class="card-sub">Change shown vs the previous period of the same length</div></div>
+            </div>
+            <div class="rate-grid" id="rates"></div>
+          </div>
+
+          <div class="grid-3-1">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">My revenue</div><div class="card-sub">Closed vs collected, <span data-grain></span></div></div>
+                <div class="legend" id="legend-revenue"></div>
+              </div>
+              <div class="chart-box tall"><canvas id="chart-revenue" aria-label="Revenue trend chart" role="img"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">My targets this month</div><div class="card-sub">Set by your admin</div></div>
+              </div>
+              <div class="targets" id="targets"></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">My funnel</div><div class="card-sub">From first message to paid client</div></div>
+              </div>
+              <div class="funnel" id="funnel"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">My outreach</div><div class="card-sub">Messages sent, <span data-grain></span></div></div>
+                <div class="legend" id="legend-activity"></div>
+              </div>
+              <div class="chart-box"><canvas id="chart-activity" aria-label="Outreach activity chart" role="img"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Conversion rates over time</div><div class="card-sub"><span data-grain-rates></span></div></div>
+                <div class="legend" id="legend-rates"></div>
+              </div>
+              <div class="chart-box"><canvas id="chart-rates" aria-label="Conversion rates chart" role="img"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Calls &amp; conversions</div><div class="card-sub"><span data-grain></span></div></div>
+                <div class="legend" id="legend-calls"></div>
+              </div>
+              <div class="chart-box"><canvas id="chart-calls" aria-label="Calls chart" role="img"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">My collections</div><div class="card-sub">Cash collected vs outstanding</div></div>
+              </div>
+              <div class="row" style="align-items:center; gap:24px">
+                <div class="chart-box" style="height:180px; width:180px; flex-shrink:0"><canvas id="chart-cash" aria-label="Collections chart" role="img"></canvas></div>
+                <div id="cash-summary"></div>
+              </div>
+            </div>
+            <div class="card" id="leaderboard-card">
+              <div class="card-head">
+                <div><div class="card-title">Team leaderboard</div><div class="card-sub">Ranked by revenue closed in this period</div></div>
+              </div>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>Member</th><th class="num">Outreach</th><th class="num">Booked</th><th class="num">Converted</th><th class="num">Revenue</th></tr></thead>
+                  <tbody id="leaderboard"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Log activity ===== -->
+        <section class="view" id="view-log" hidden>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Log your activity</div>
+                <div class="card-sub">Enter your totals for the day. Logging the same date again updates that day.</div>
+              </div>
+            </div>
+            <div id="log-form"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><div class="card-title">Last 7 days</div><div class="card-sub">Click a row to edit it</div></div></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Date</th><th class="num">Outreach</th><th class="num">Replies</th><th class="num">Booked</th><th class="num">Converted</th><th class="num">Revenue</th></tr></thead>
+                <tbody id="recent"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Entries ===== -->
+        <section class="view" id="view-entries" hidden>
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">My entries</div><div class="card-sub">Everything you've logged in the selected period</div></div>
+              <button class="btn btn-sm" id="btn-export">Export CSV</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table" id="entries-table">
+                <thead><tr>
+                  <th data-sort="date">Date</th>
+                  <th class="num" data-sort="outreach">Outreach</th>
+                  <th class="num" data-sort="followUps">Follow-ups</th>
+                  <th class="num" data-sort="replies">Replies</th>
+                  <th class="num" data-sort="callsBooked">Booked</th>
+                  <th class="num" data-sort="callsShown">Attended</th>
+                  <th class="num" data-sort="dealsClosed">Converted</th>
+                  <th class="num" data-sort="paid">Paid</th>
+                  <th class="num" data-sort="revenue">Revenue</th>
+                  <th class="num" data-sort="cashCollected">Cash</th>
+                  <th>Notes</th>
+                  <th></th>
+                </tr></thead>
+                <tbody id="entries"></tbody>
+              </table>
+            </div>
+            <div class="row" id="entries-pager" style="margin-top:14px"></div>
+          </div>
+        </section>
+
+        <!-- ===== Account ===== -->
+        <section class="view" id="view-account" hidden>
+          <div class="card" style="max-width:560px">
+            <div class="card-head"><div><div class="card-title">Change password</div><div class="card-sub">Signed in as <span id="acct-email"></span></div></div></div>
+            <form id="pw-form" style="display:grid; gap:14px" novalidate>
+              <div class="field"><label for="pw-current">Current password</label><input id="pw-current" class="input" type="password" autocomplete="current-password"></div>
+              <div class="field"><label for="pw-new">New password</label><input id="pw-new" class="input" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+              <div class="field"><label for="pw-confirm">Confirm new password</label><input id="pw-confirm" class="input" type="password" autocomplete="new-password"></div>
+              <div class="form-error" id="pw-error" hidden></div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit">Update password</button></div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/metrics.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/team.js"></script>
+</body>
+</html>

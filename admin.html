@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard · WorthyOps</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ================= Sidebar ================= -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-mark">W</span>
+        <span>WorthyOps<small>Admin</small></span>
+      </div>
+      <nav class="nav" aria-label="Main">
+        <div class="nav-label">Analytics</div>
+        <a href="#overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Overview
+        </a>
+        <a href="#team">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21V11M16 21V5M12 21v-6M4 21h16"/></svg>
+          Team performance
+        </a>
+        <a href="#activity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          Activity log
+        </a>
+        <div class="nav-label" style="margin-top:14px">Manage</div>
+        <a href="#members">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M19 8v6M16 11h6"/></svg>
+          Team members
+        </a>
+        <a href="#settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="user-chip">
+          <span class="avatar" data-user-initials></span>
+          <div class="who"><div class="name" data-user-name></div><div class="role">Administrator</div></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-sm" data-logout style="flex:1">Log out</button>
+          <button class="icon-btn" data-theme-toggle type="button" style="width:30px;height:30px"></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= Main ================= -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" type="button" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div>
+          <h1 id="page-title">Overview</h1>
+          <div class="page-sub" id="page-sub"></div>
+        </div>
+        <div class="filters" id="filters">
+          <label class="sr-only" for="f-range">Date range</label>
+          <select id="f-range" class="select">
+            <option value="7d">Last 7 days</option>
+            <option value="30d" selected>Last 30 days</option>
+            <option value="mtd">Month to date</option>
+            <option value="lastmonth">Last month</option>
+            <option value="90d">Last 90 days</option>
+            <option value="ytd">Year to date</option>
+            <option value="all">All time</option>
+          </select>
+          <label class="sr-only" for="f-member">Team member</label>
+          <select id="f-member" class="select"></select>
+          <button class="btn btn-primary" id="btn-log" type="button">+ Log activity</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- ===== Overview ===== -->
+        <section class="view" id="view-overview">
+          <div class="kpi-grid" id="kpis"></div>
+
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Conversion rates</div><div class="card-sub">Change shown vs the previous period of the same length</div></div>
+            </div>
+            <div class="rate-grid" id="rates"></div>
+          </div>
+
+          <div class="grid-3-1">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Revenue trend</div><div class="card-sub">Closed vs collected, <span data-grain></span></div></div>
+                <div class="legend" id="legend-revenue"></div>
+              </div>
+              <div class="chart-box tall"><canvas id="chart-revenue" aria-label="Revenue trend chart" role="img"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">This month's targets</div><div class="card-sub" id="targets-sub">Team targets</div></div>
+              </div>
+              <div class="targets" id="targets"></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Sales funnel</div><div class="card-sub">From first message to paid client</div></div>
+              </div>
+              <div class="funnel" id="funnel"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Outreach activity</div><div class="card-sub">Messages sent, <span data-grain></span></div></div>
+                <div class="legend" id="legend-activity"></div>
+              </div>
+              <div class="chart-box"><canvas id="chart-activity" aria-label="Outreach activity chart" role="img"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Conversion rates over time</div><div class="card-sub"><span data-grain-rates></span></div></div>
+                <div class="legend" id="legend-rates"></div>
+              </div>
+              <div class="chart-box"><canvas id="chart-rates" aria-label="Conversion rates chart" role="img"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Calls &amp; conversions</div><div class="card-sub"><span data-grain></span></div></div>
+                <div class="legend" id="legend-calls"></div>
+              </div>
+              <div class="chart-box"><canvas id="chart-calls" aria-label="Calls chart" role="img"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid-3-1">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Revenue by team member</div><div class="card-sub">Closed vs collected in the selected period</div></div>
+                <div class="legend" id="legend-member-revenue"></div>
+              </div>
+              <div class="chart-box" id="member-revenue-box"><canvas id="chart-member-revenue" aria-label="Revenue by member chart" role="img"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Collections</div><div class="card-sub">Cash collected vs outstanding</div></div>
+              </div>
+              <div class="chart-box" style="height:180px"><canvas id="chart-cash" aria-label="Collections chart" role="img"></canvas></div>
+              <div id="cash-summary" style="margin-top:14px"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Team performance ===== -->
+        <section class="view" id="view-team" hidden>
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Leaderboard</div><div class="card-sub">Ranked by revenue closed. Click a column to sort.</div></div>
+              <button class="btn btn-sm" id="btn-export-team">Export CSV</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table" id="leaderboard-table">
+                <thead><tr>
+                  <th>Member</th>
+                  <th class="num" data-sort="outreach">Outreach</th>
+                  <th class="num" data-sort="replies">Replies</th>
+                  <th class="num" data-sort="replyRate">Reply %</th>
+                  <th class="num" data-sort="callsBooked">Booked</th>
+                  <th class="num" data-sort="showRate">Show %</th>
+                  <th class="num" data-sort="dealsClosed">Converted</th>
+                  <th class="num" data-sort="closeRate">Close %</th>
+                  <th class="num" data-sort="paid">Paid</th>
+                  <th class="num" data-sort="revenue">Revenue</th>
+                  <th class="num" data-sort="cashCollected">Cash</th>
+                </tr></thead>
+                <tbody id="leaderboard"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Outreach by member</div><div class="card-sub">Outreach and follow-ups sent</div></div>
+                <div class="legend" id="legend-member-outreach"></div>
+              </div>
+              <div class="chart-box" id="member-outreach-box"><canvas id="chart-member-outreach" aria-label="Outreach by member chart" role="img"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div><div class="card-title">Close rate by member</div><div class="card-sub">Converted ÷ calls attended</div></div>
+              </div>
+              <div class="chart-box" id="member-close-box"><canvas id="chart-member-close" aria-label="Close rate by member chart" role="img"></canvas></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Activity log ===== -->
+        <section class="view" id="view-activity" hidden>
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Activity log</div><div class="card-sub">Every daily entry for the selected period and member</div></div>
+              <div class="row">
+                <button class="btn btn-sm" id="btn-export-entries">Export CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table" id="entries-table">
+                <thead><tr>
+                  <th data-sort="date">Date</th>
+                  <th data-sort="member">Member</th>
+                  <th class="num" data-sort="outreach">Outreach</th>
+                  <th class="num" data-sort="followUps">Follow-ups</th>
+                  <th class="num" data-sort="replies">Replies</th>
+                  <th class="num" data-sort="callsBooked">Booked</th>
+                  <th class="num" data-sort="callsShown">Attended</th>
+                  <th class="num" data-sort="dealsClosed">Converted</th>
+                  <th class="num" data-sort="paid">Paid</th>
+                  <th class="num" data-sort="revenue">Revenue</th>
+                  <th class="num" data-sort="cashCollected">Cash</th>
+                  <th>Notes</th>
+                  <th></th>
+                </tr></thead>
+                <tbody id="entries"></tbody>
+              </table>
+            </div>
+            <div class="row" id="entries-pager" style="margin-top:14px"></div>
+          </div>
+        </section>
+
+        <!-- ===== Members ===== -->
+        <section class="view" id="view-members" hidden>
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Team members</div><div class="card-sub">Create logins for your team. They sign in on the Team login page.</div></div>
+              <button class="btn btn-primary btn-sm" id="btn-add-member">+ Add member</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr>
+                  <th>Name</th><th>Email</th><th>Status</th>
+                  <th class="num">Outreach (30d)</th><th class="num">Revenue (30d)</th>
+                  <th>Last login</th><th></th>
+                </tr></thead>
+                <tbody id="members"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Settings ===== -->
+        <section class="view" id="view-settings" hidden>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><div><div class="card-title">Monthly team targets</div><div class="card-sub">Each member's default target is an equal share of these</div></div></div>
+              <form id="targets-form" class="form-grid">
+                <div class="field"><label for="t-outreach">Outreach</label><input id="t-outreach" class="input" type="number" min="0"></div>
+                <div class="field"><label for="t-callsBooked">Calls booked</label><input id="t-callsBooked" class="input" type="number" min="0"></div>
+                <div class="field"><label for="t-dealsClosed">Deals converted</label><input id="t-dealsClosed" class="input" type="number" min="0"></div>
+                <div class="field"><label for="t-revenue">Revenue</label><input id="t-revenue" class="input" type="number" min="0"></div>
+                <div class="form-actions span-all"><button class="btn btn-primary" type="submit">Save targets</button></div>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><div class="card-title">Preferences</div></div></div>
+              <form id="prefs-form" class="form-grid">
+                <div class="field">
+                  <label for="s-currency">Currency</label>
+                  <select id="s-currency" class="select">
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="INR">INR - Indian Rupee</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="AUD">AUD - Australian Dollar</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                    <option value="AED">AED - UAE Dirham</option>
+                    <option value="SGD">SGD - Singapore Dollar</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="s-locale">Number format</label>
+                  <select id="s-locale" class="select">
+                    <option value="en-US">1,234,567 (US)</option>
+                    <option value="en-IN">12,34,567 (India)</option>
+                    <option value="en-GB">1,234,567 (UK)</option>
+                    <option value="de-DE">1.234.567 (EU)</option>
+                  </select>
+                </div>
+                <label class="row span-all small" style="gap:8px">
+                  <input id="s-leaderboard" type="checkbox"> Show the team leaderboard to team members
+                </label>
+                <div class="form-actions span-all"><button class="btn btn-primary" type="submit">Save preferences</button></div>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><div class="card-title">Your admin account</div><div class="card-sub">Change your name, email or password</div></div></div>
+              <form id="account-form" class="form-grid">
+                <div class="field"><label for="a-name">Name</label><input id="a-name" class="input" required></div>
+                <div class="field"><label for="a-email">Email</label><input id="a-email" class="input" type="email" required></div>
+                <div class="field"><label for="a-current">Current password</label><input id="a-current" class="input" type="password" autocomplete="current-password"></div>
+                <div class="field"><label for="a-new">New password</label><input id="a-new" class="input" type="password" autocomplete="new-password" placeholder="Leave blank to keep"></div>
+                <div class="form-error span-all" id="account-error" hidden></div>
+                <div class="form-actions span-all"><button class="btn btn-primary" type="submit">Update account</button></div>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><div class="card-title">Data &amp; backup</div><div class="card-sub">Data is stored in this browser. Back it up regularly.</div></div></div>
+              <div style="display:grid; gap:12px">
+                <div class="row">
+                  <button class="btn" id="btn-backup">Download backup (.json)</button>
+                  <label class="btn" for="restore-file">Restore from backup…</label>
+                  <input id="restore-file" type="file" accept="application/json,.json" hidden>
+                </div>
+                <div class="row">
+                  <button class="btn btn-danger" id="btn-clear">Clear all activity</button>
+                  <button class="btn btn-danger" id="btn-factory">Factory reset</button>
+                </div>
+                <p class="small muted">"Clear all activity" removes every logged entry (including the demo data) but keeps accounts. "Factory reset" wipes everything and restores the default accounts.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/metrics.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

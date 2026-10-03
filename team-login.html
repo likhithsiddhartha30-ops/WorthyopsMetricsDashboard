@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Login · WorthyOps</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body data-role="member">
+  <button class="icon-btn auth-theme" data-theme-toggle type="button"></button>
+
+  <main class="auth-page">
+    <section class="auth-brand team">
+      <div class="logo"><span class="logo-mark">W</span> WorthyOps</div>
+      <div>
+        <h1>Log your numbers. Watch them grow.</h1>
+        <p>Track your daily outreach, replies, calls and closes - and see exactly where your pipeline stands.</p>
+        <ul>
+          <li>Log today's activity in under a minute</li>
+          <li>Your personal funnel &amp; conversion rates</li>
+          <li>Progress against your monthly targets</li>
+          <li>See where you rank on the team</li>
+        </ul>
+      </div>
+      <p class="foot">Team member access</p>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <span class="badge badge-good role-pill">Team portal</span>
+        <h2>Sign in</h2>
+        <p class="lead">Use the email and password your admin gave you.</p>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" class="input" type="email" autocomplete="username" placeholder="you@company.com" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input id="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••" required>
+              <button id="toggle-password" type="button" aria-pressed="false">Show</button>
+            </div>
+          </div>
+          <label class="row small muted" style="gap:8px">
+            <input id="remember" type="checkbox"> Keep me signed in on this device
+          </label>
+          <div id="login-error" class="form-error" role="alert" hidden></div>
+          <button id="login-submit" class="btn btn-primary btn-block" type="submit" style="height:42px">Sign in</button>
+        </form>
+
+        <p class="auth-switch">Forgot your password? Ask your admin to reset it.<br>Admin? <a href="admin-login.html">Admin login →</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

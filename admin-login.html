@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login · WorthyOps</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body data-role="admin">
+  <button class="icon-btn auth-theme" data-theme-toggle type="button"></button>
+
+  <main class="auth-page">
+    <section class="auth-brand">
+      <div class="logo"><span class="logo-mark">W</span> WorthyOps</div>
+      <div>
+        <h1>Run the whole sales engine from one screen.</h1>
+        <p>See every rep's outreach, replies, calls, conversions and revenue in real time.</p>
+        <ul>
+          <li>Team-wide funnel &amp; conversion rates</li>
+          <li>Revenue, cash collected &amp; monthly targets</li>
+          <li>Leaderboard and per-member breakdowns</li>
+          <li>Manage team accounts and export data</li>
+        </ul>
+      </div>
+      <p class="foot">Admin access only</p>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <span class="badge badge-accent role-pill">Admin portal</span>
+        <h2>Welcome back</h2>
+        <p class="lead">Sign in with your admin account.</p>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" class="input" type="email" autocomplete="username" placeholder="admin@company.com" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input id="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••" required>
+              <button id="toggle-password" type="button" aria-pressed="false">Show</button>
+            </div>
+          </div>
+          <label class="row small muted" style="gap:8px">
+            <input id="remember" type="checkbox"> Keep me signed in on this device
+          </label>
+          <div id="login-error" class="form-error" role="alert" hidden></div>
+          <button id="login-submit" class="btn btn-primary btn-block" type="submit" style="height:42px">Sign in</button>
+        </form>
+
+        <p class="auth-switch">Not an admin? <a href="team-login.html">Team member login →</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
