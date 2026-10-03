@@ -239,6 +239,8 @@ const Sheets = (() => {
       const leads = (data.leads || []).map((r) => rowToLead(r, byTitle)).filter((l) => l.id && l.name);
       const entries = (data.daily || []).map(rowToEntry).filter((e) => e.date);
       if (queue.length || flushing) return false; // a local edit happened while we were fetching
+      // First sync on this browser: the sheet is the real data, so drop the demo team
+      if (!Store.getSettings().demoRemoved) Store.removeDemoData();
       Store.applyRemote({ leads, contents, entries });
       setStatus({ state: 'ok', last: new Date(), error: '', counts: { leads: leads.length, content: contents.length, daily: entries.length } });
       return true;

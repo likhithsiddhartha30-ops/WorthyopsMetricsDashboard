@@ -18,9 +18,10 @@ window.APP_CONFIG = {
     password: 'Admin@2026'
   },
 
-  // Demo team members + 120 days of sample data, so the charts aren't empty.
-  // Admin can wipe the demo data from Settings -> "Clear all activity".
-  seedDemoData: true,
+  // Demo team members + sample data (for trying the dashboard out).
+  // Off: real data comes from the Google Sheet. Existing demo data is removed
+  // automatically on the first sheet sync, or via Settings → "Remove demo data".
+  seedDemoData: false,
   demoPassword: 'Team@2026',
   demoMembers: [
     { name: 'Aarav Mehta', email: 'aarav@worthyops.com' },

@@ -422,6 +422,17 @@
     }
   });
 
+  $('#btn-demo').addEventListener('click', async () => {
+    const synced = Store.remoteOn();
+    const msg = synced
+      ? 'Remove the demo team members (Aarav, Priya, Rohan, Sneha)? Your Google Sheet data is not touched.'
+      : 'Remove the demo team members and ALL sample leads, content and activity in this browser?';
+    if (await Utils.confirmDialog(msg, { title: 'Remove demo data?', confirmText: 'Remove' })) {
+      const n = Store.removeDemoData();
+      Utils.toast(`Demo data removed${n ? ` (${n} demo members)` : ''}.`);
+    }
+  });
+
   $('#btn-clear-leads').addEventListener('click', async () => {
     if (await Utils.confirmDialog('Delete every lead in the lead list? Download a backup or export the leads first if you might need them.', { confirmText: 'Clear leads' })) {
       try {

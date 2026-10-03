@@ -511,6 +511,25 @@ const Store = (() => {
     unlinked.forEach((l) => emit('leads', 'upsert', l));
   }
 
+  /** Delete the demo team members (and, when not synced, all sample data). */
+  function removeDemoData() {
+    const demoEmails = new Set((APP_CONFIG.demoMembers || []).map((m) => m.email.toLowerCase()));
+    const demoIds = new Set(db.users.filter((u) => u.role === 'member' && demoEmails.has(u.email)).map((u) => u.id));
+    db.users = db.users.filter((u) => !demoIds.has(u.id));
+    if (remote) {
+      // Synced data belongs to the sheet; just drop anything still pointing at demo members
+      (db.leads || []).forEach((l) => { if (demoIds.has(l.ownerId)) l.ownerId = null; });
+      db.entries = db.entries.filter((e) => !demoIds.has(e.userId));
+    } else {
+      db.leads = [];
+      db.contents = [];
+      db.entries = [];
+    }
+    db.settings.demoRemoved = true;
+    save();
+    return demoIds.size;
+  }
+
   function clearLeads() {
     if (remote) throw new Error('Leads are synced with Google Sheets - delete rows in the sheet instead.');
     db.leads = [];
@@ -642,7 +661,7 @@ const Store = (() => {
     getEntries, getEntry, findEntry, upsertEntry, deleteEntry, clearEntries,
     getLeads, getLead, saveLead, setLeadStage, logFollowUp, deleteLead, importLeads, clearLeads,
     getContents, getContent, saveContent, deleteContent,
-    setRemote, remoteOn, applyRemote,
+    setRemote, remoteOn, applyRemote, removeDemoData,
     getSettings, updateSettings, exportData, importData, resetAll
   };
 })();
