@@ -189,6 +189,8 @@
   });
 
   // Re-render on data changes, except while typing in the log form
+  Sheets.mountStatus($('#sync-chip'));
+  Sheets.start();
   Store.subscribe(() => { if (state.view !== 'log' || !document.activeElement.closest('#log-form')) render(); });
   document.addEventListener('themechange', render);
   Dashboard.router(Object.keys(VIEWS), (id) => { state.view = id; if (id !== 'log') editingEntry = null; render(); });

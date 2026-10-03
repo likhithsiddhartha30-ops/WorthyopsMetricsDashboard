@@ -66,6 +66,25 @@ js/team.js          team page logic
 js/login.js         login page logic
 ```
 
+## Google Sheet sync
+
+Leads, Content and Daily Activity sync both ways with the WorthyOps Google Sheet:
+
+- **From the sheet:** the dashboard pulls every 60 seconds, plus on page load and when you return to the tab. Rows added by an AI outreach tool show up automatically.
+- **To the sheet:** adding, editing or deleting on the dashboard writes back to the sheet within a second.
+
+Setup:
+
+1. Copy `google-apps-script/Code.gs` into an Apps Script project. (It already exists as "WorthyOps Sheet API".)
+2. Go to **Deploy → New deployment → Web app**. Set Execute as **Me** and Who has access **Anyone**, then click **Deploy** and **Authorize**.
+3. Copy the **Web app URL** (it ends in `/exec`) into **Admin → Settings → Google Sheet sync**, then click **Test & connect**. To make it the default for every browser, create `js/config.local.js`, which git ignores, containing `APP_CONFIG.sheetSync.url = '…/exec';`. That keeps the URL out of the repo.
+4. Optional extra lock: set `API_KEY` in the script to any random string, redeploy, and enter the same key in Settings.
+
+Things to know:
+
+- **Owner and Team Member names** in the sheet must match the names of dashboard accounts to link to them.
+- **Treat the web app URL like a password.** Anyone who has it can read and change the sheet.
+
 ## Important: where data lives
 
 Data is saved in the **browser's localStorage**. Each browser/computer has its own copy, so team members on different machines will **not** see each other's data yet. Client-side login also isn't real security.

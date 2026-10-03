@@ -5,3 +5,6 @@ desktop.ini
 *.log
 # Local dashboard backups may contain real team data
 worthyops-backup_*.json
+
+# Private local settings (sheet URL etc.)
+js/config.local.js

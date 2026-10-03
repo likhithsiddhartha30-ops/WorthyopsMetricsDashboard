@@ -376,7 +376,7 @@ const Content = (() => {
                 const o = Store.getUser(l.ownerId);
                 return `<tr class="clickable" data-lead="${l.id}">
                   <td><div class="lead-cell"><span class="n">${esc(l.name)}</span><span class="b">${esc(l.handle || l.email || '')}</span></div></td>
-                  <td>${o ? esc(o.name) : '<span class="badge badge-warn">Unassigned</span>'}</td>
+                  <td>${o ? esc(o.name) : l.ownerName ? esc(l.ownerName) : '<span class="badge badge-warn">Unassigned</span>'}</td>
                   <td>${Leads.stagePill(l.stage)}</td>
                   <td class="num">${l.dealValue ? money(l.dealValue) : '—'}</td>
                   <td class="num">${l.amountPaid ? money(l.amountPaid) : '—'}</td>

@@ -23,6 +23,12 @@ const Store = (() => {
   let db = null;
   const listeners = new Set();
 
+  // Remote sync hook (Google Sheets). Called after every local change.
+  let remote = null;
+  const emit = (kind, action, record) => { if (remote) remote(kind, action, record); };
+  const setRemote = (fn) => { remote = fn; };
+  const remoteOn = () => !!remote;
+
   function emptyDb() {
     return {
       version: 1,
@@ -397,6 +403,8 @@ const Store = (() => {
       lastContactAt: date(data.lastContactAt),
       nextFollowUpAt: date(data.nextFollowUpAt),
       notes: String(data.notes || '').slice(0, 1000),
+      message: String(data.message || '').slice(0, 2000),
+      ownerName: data.ownerId ? '' : String(data.ownerName || '').slice(0, 120),
       stageDates: Object.assign({}, existing ? existing.stageDates : {}, data.stageDates || {})
     };
   }
@@ -419,6 +427,7 @@ const Store = (() => {
       db.leads.push(lead);
     }
     save();
+    emit('leads', 'upsert', lead);
     return lead;
   }
 
@@ -441,8 +450,10 @@ const Store = (() => {
   }
 
   function deleteLead(id) {
+    const lead = getLead(id);
     db.leads = (db.leads || []).filter((l) => l.id !== id);
     save();
+    if (lead) emit('leads', 'delete', lead);
   }
 
   // ---------- Content library ----------
@@ -477,23 +488,31 @@ const Store = (() => {
     if (c) {
       Object.assign(c, clean, { updatedAt: now });
       // Keep linked leads' channel in sync if organic/paid changed
-      (db.leads || []).forEach((l) => { if (l.contentId === c.id) l.origin = c.channel; });
+      (db.leads || []).forEach((l) => {
+        if (l.contentId === c.id && l.origin !== c.channel) { l.origin = c.channel; emit('leads', 'upsert', l); }
+      });
     } else {
       c = Object.assign({ id: Utils.uid('c'), createdAt: now, updatedAt: now }, clean);
       db.contents.push(c);
     }
     save();
+    emit('content', 'upsert', c);
     return c;
   }
 
   /** Deletes the content; its leads stay but lose the link (keep their channel). */
   function deleteContent(id) {
-    db.contents = (db.contents || []).filter((c) => c.id !== id);
-    (db.leads || []).forEach((l) => { if (l.contentId === id) l.contentId = null; });
+    const c = getContent(id);
+    db.contents = (db.contents || []).filter((x) => x.id !== id);
+    const unlinked = (db.leads || []).filter((l) => l.contentId === id);
+    unlinked.forEach((l) => { l.contentId = null; });
     save();
+    if (c) emit('content', 'delete', c);
+    unlinked.forEach((l) => emit('leads', 'upsert', l));
   }
 
   function clearLeads() {
+    if (remote) throw new Error('Leads are synced with Google Sheets - delete rows in the sheet instead.');
     db.leads = [];
     save();
   }
@@ -508,7 +527,9 @@ const Store = (() => {
       try {
         const clean = normalizeLead(r, null);
         if (!clean.stageDates[clean.stage]) clean.stageDates[clean.stage] = Utils.toISO(Utils.today());
-        db.leads.push(Object.assign({ id: Utils.uid('l'), createdAt: now, updatedAt: now }, clean));
+        const lead = Object.assign({ id: Utils.uid('l'), createdAt: now, updatedAt: now }, clean);
+        db.leads.push(lead);
+        emit('leads', 'upsert', lead);
         added++;
       } catch (e) {
         errors.push(`Row ${i + 2}: ${e.message}`);
@@ -545,7 +566,11 @@ const Store = (() => {
     const clash = findEntry(userId, date);
     if (entry && clash && clash.id !== entry.id) {
       db.entries = db.entries.filter((e) => e.id !== entry.id);
+      emit('daily', 'delete', entry);
       entry = clash;
+    } else if (entry && (entry.date !== date || entry.userId !== userId)) {
+      // Date or member changed: the sheet row is keyed by both, so remove the old one
+      emit('daily', 'delete', Object.assign({}, entry));
     }
     if (entry) {
       Object.assign(entry, nums, { userId, date, notes: String(notes).slice(0, 500), updatedAt: now });
@@ -554,15 +579,19 @@ const Store = (() => {
       db.entries.push(entry);
     }
     save();
+    emit('daily', 'upsert', entry);
     return entry;
   }
 
   function deleteEntry(id) {
+    const entry = getEntry(id);
     db.entries = db.entries.filter((e) => e.id !== id);
     save();
+    if (entry) emit('daily', 'delete', entry);
   }
 
   function clearEntries() {
+    if (remote) throw new Error('Activity is synced with Google Sheets - delete rows in the sheet instead.');
     db.entries = [];
     save();
   }
@@ -597,6 +626,14 @@ const Store = (() => {
     db = null;
   }
 
+  /** Replace synced collections with data pulled from Google Sheets (no echo back). */
+  function applyRemote({ leads, contents, entries }) {
+    if (Array.isArray(contents)) db.contents = contents;
+    if (Array.isArray(leads)) db.leads = leads;
+    if (Array.isArray(entries)) db.entries = entries;
+    save();
+  }
+
   const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 
   return {
@@ -605,6 +642,7 @@ const Store = (() => {
     getEntries, getEntry, findEntry, upsertEntry, deleteEntry, clearEntries,
     getLeads, getLead, saveLead, setLeadStage, logFollowUp, deleteLead, importLeads, clearLeads,
     getContents, getContent, saveContent, deleteContent,
+    setRemote, remoteOn, applyRemote,
     getSettings, updateSettings, exportData, importData, resetAll
   };
 })();

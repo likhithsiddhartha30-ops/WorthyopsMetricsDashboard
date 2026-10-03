@@ -29,6 +29,14 @@ window.APP_CONFIG = {
     { name: 'Sneha Reddy', email: 'sneha@worthyops.com' }
   ],
 
+  // Google Sheet sync (Apps Script web app). Leave empty to keep data in the
+  // browser only. Can also be set per-browser in Admin → Settings.
+  // Anyone with the URL + key can read and write the sheet - keep them private.
+  sheetSync: {
+    url: '', // set in js/config.local.js (git-ignored) or Admin → Settings
+    key: ''
+  },
+
   // Lead pipeline stages, in order. Keep keys stable - they will be used
   // to map the "Status" column when we connect the Google Sheet.
   leadStages: [

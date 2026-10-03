@@ -426,7 +426,7 @@ const Dashboard = (() => {
           const u = Store.getUser(e.userId);
           return `<tr>
             <td>${Utils.formatDate(e.date)}</td>
-            ${opts.showMember ? `<td>${esc(u ? u.name : 'Deleted user')}</td>` : ''}
+            ${opts.showMember ? `<td>${esc(u ? u.name : e.memberName || 'Deleted user')}</td>` : ''}
             ${Store.FIELDS.map((f) => `<td class="num">${f.money ? money(e[f.key]) : num(e[f.key])}</td>`).join('')}
             <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis" title="${esc(e.notes)}">${esc(e.notes) || '<span class="muted">—</span>'}</td>
             <td><div class="table-actions">

@@ -138,6 +138,7 @@ const Leads = (() => {
           <div class="field"><label for="lf-fu">Follow-ups sent</label><input id="lf-fu" class="input" type="number" min="0" step="1" value="${l.followUps || ''}" placeholder="0"></div>
           <div class="field"><label for="lf-last">Last contact</label><input id="lf-last" class="input" type="date" value="${esc(l.lastContactAt || '')}"></div>
           <div class="field"><label for="lf-next">Next follow-up</label><input id="lf-next" class="input" type="date" value="${esc(l.nextFollowUpAt || '')}"></div>
+          <div class="field span-all"><label for="lf-message">Outreach message</label><textarea id="lf-message" class="input" maxlength="2000" placeholder="The first DM / email sent (e.g. the AI-written message)">${esc(l.message || '')}</textarea></div>
           <div class="field span-all"><label for="lf-notes">Notes</label><textarea id="lf-notes" class="input" maxlength="1000" placeholder="Context, objections, what they need…">${esc(l.notes || '')}</textarea></div>
           <div class="form-error span-all" hidden></div>
           <div class="form-actions span-all">
@@ -187,6 +188,8 @@ const Leads = (() => {
           followUps: $('#lf-fu', r).value,
           lastContactAt: $('#lf-last', r).value,
           nextFollowUpAt: $('#lf-next', r).value,
+          message: $('#lf-message', r).value,
+          ownerName: lead ? lead.ownerName : '',
           notes: $('#lf-notes', r).value
         });
         m.close();
@@ -399,7 +402,7 @@ const Leads = (() => {
         <td><div class="lead-cell"><span class="n">${esc(l.name)}</span><span class="b">${esc(l.business || l.niche || '')}</span></div></td>
         <td><div class="lead-cell"><span>${contact[0] ? handleLink(contact[0]) : '<span class="muted">—</span>'}</span><span class="b">${esc(contact[1] || '')}</span></div></td>
         <td><div class="lead-cell">${originPill(l)}<span class="b" style="margin-top:3px; max-width:200px; overflow:hidden; text-overflow:ellipsis">${esc([l.source, (Store.getContent(l.contentId) || {}).title].filter(Boolean).join(' · '))}</span></div></td>
-        ${isAdmin ? `<td>${owner ? `<span class="member-cell"><span class="avatar">${esc(Utils.initials(owner.name))}</span>${esc(owner.name.split(' ')[0])}</span>` : '<span class="badge badge-warn">Unassigned</span>'}</td>` : ''}
+        ${isAdmin ? `<td>${owner ? `<span class="member-cell"><span class="avatar">${esc(Utils.initials(owner.name))}</span>${esc(owner.name.split(' ')[0])}</span>` : l.ownerName ? `<span class="badge" title="Owner name from the sheet - no matching dashboard account">${esc(l.ownerName)}</span>` : '<span class="badge badge-warn">Unassigned</span>'}</td>` : ''}
         <td>
           <select class="select stage-select" data-stage-for="${l.id}" aria-label="Stage for ${esc(l.name)}" style="border-color:${STAGE_COLOR[l.stage]}">
             ${STAGES.map((s) => `<option value="${s.key}" ${s.key === l.stage ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}
@@ -510,12 +513,12 @@ const Leads = (() => {
     const ALIASES = {
       name: ['name', 'full name', 'lead', 'lead name', 'client', 'client name', 'contact', 'contact name', 'prospect'],
       business: ['business', 'company', 'brand', 'business name', 'company name', 'organisation', 'organization'],
-      handle: ['handle', 'instagram', 'ig', 'ig handle', 'username', 'profile', 'profile link', 'link', 'url', 'linkedin', 'social'],
+      handle: ['handle', 'handle / link', 'instagram', 'ig', 'ig handle', 'username', 'profile', 'profile link', 'link', 'url', 'linkedin', 'social'],
       email: ['email', 'email address', 'e-mail', 'mail'],
       phone: ['phone', 'phone number', 'mobile', 'whatsapp', 'number'],
       source: ['source', 'platform', 'channel', 'lead source'],
       origin: ['lead type', 'type', 'origin', 'inbound/outbound', 'inbound or outbound', 'traffic', 'traffic type'],
-      content: ['content', 'post', 'ad', 'campaign', 'creative', 'content piece', 'ad name', 'post title'],
+      content: ['content', 'content / ad', 'post', 'ad', 'campaign', 'creative', 'content piece', 'ad name', 'post title'],
       niche: ['niche', 'industry', 'category', 'vertical'],
       owner: ['owner', 'rep', 'assigned to', 'assigned', 'setter', 'sdr', 'team member', 'sales rep'],
       stage: ['stage', 'status', 'lead status', 'pipeline stage'],

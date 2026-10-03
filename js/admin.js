@@ -415,15 +415,19 @@
 
   $('#btn-clear').addEventListener('click', async () => {
     if (await Utils.confirmDialog('Delete every logged activity entry for every member? Accounts are kept. Download a backup first if you might need it.', { confirmText: 'Clear activity' })) {
-      Store.clearEntries();
-      Utils.toast('All activity cleared.');
+      try {
+        Store.clearEntries();
+        Utils.toast('All activity cleared.');
+      } catch (x) { Utils.toast(x.message, 'error'); }
     }
   });
 
   $('#btn-clear-leads').addEventListener('click', async () => {
     if (await Utils.confirmDialog('Delete every lead in the lead list? Download a backup or export the leads first if you might need them.', { confirmText: 'Clear leads' })) {
-      Store.clearLeads();
-      Utils.toast('All leads cleared.');
+      try {
+        Store.clearLeads();
+        Utils.toast('All leads cleared.');
+      } catch (x) { Utils.toast(x.message, 'error'); }
     }
   });
 
@@ -434,7 +438,62 @@
     }
   });
 
+  // ---------- Google Sheet sync ----------
+  function paintSheetState(st) {
+    const badge = $('#gs-state');
+    if (!badge) return;
+    const map = {
+      off: ['Not connected', ''],
+      syncing: ['Syncing…', 'badge-accent'],
+      ok: [`Connected · ${st.counts ? `${st.counts.leads} leads, ${st.counts.content} content, ${st.counts.daily} days` : 'synced'}`, 'badge-good'],
+      error: ['Error', 'badge-bad']
+    };
+    const [text, cls] = map[st.state] || map.off;
+    badge.textContent = text;
+    badge.className = 'badge ' + cls;
+    const err = $('#gs-error');
+    err.hidden = st.state !== 'error';
+    err.textContent = st.error || '';
+  }
+  Sheets.onStatus(paintSheetState);
+  const gsCfg = Sheets.config();
+  $('#gs-url').value = gsCfg.url;
+  $('#gs-key').value = gsCfg.key;
+
+  $('#gs-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = $('#gs-url').value.trim();
+    const key = $('#gs-key').value.trim();
+    const err = $('#gs-error');
+    err.hidden = true;
+    if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) {
+      err.textContent = 'Paste the web app URL from Apps Script (starts with https://script.google.com/).';
+      err.hidden = false;
+      return;
+    }
+    try {
+      const counts = await Sheets.test(url, key);
+      if (!(await Utils.confirmDialog(`Found ${counts.leads} leads, ${counts.content} content pieces and ${counts.daily} activity rows in the sheet. Connect? The dashboard's current leads, content and activity will be replaced by the sheet's data.`, { title: 'Connect Google Sheet?', confirmText: 'Connect' }))) return;
+      Sheets.saveConfig({ url, key });
+      await Sheets.start();
+      Utils.toast('Google Sheet connected.');
+    } catch (x) {
+      err.textContent = 'Could not connect: ' + x.message;
+      err.hidden = false;
+    }
+  });
+  $('#gs-sync').addEventListener('click', () => Sheets.pull());
+  $('#gs-disconnect').addEventListener('click', () => {
+    Sheets.stop();
+    Sheets.clearConfig();
+    $('#gs-url').value = '';
+    $('#gs-key').value = '';
+    Utils.toast('Disconnected. Data now stays in this browser only.');
+  });
+
   // ---------- Boot ----------
+  Sheets.mountStatus($('#sync-chip'));
+  Sheets.start();
   Store.subscribe(render);
   document.addEventListener('themechange', render);
   Dashboard.router(Object.keys(VIEWS), (id) => { state.view = id; render(); });
