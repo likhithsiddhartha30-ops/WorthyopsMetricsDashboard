@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Dashboard · WorthyOps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
@@ -24,6 +27,11 @@
         <a href="#log">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           Log activity
+        </a>
+        <a href="#leads">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>
+          My leads
+          <span class="count" id="nav-leads-count"></span>
         </a>
         <a href="#entries">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
@@ -57,16 +65,7 @@
           <div class="page-sub" id="page-sub"></div>
         </div>
         <div class="filters" id="filters">
-          <label class="sr-only" for="f-range">Date range</label>
-          <select id="f-range" class="select">
-            <option value="7d">Last 7 days</option>
-            <option value="30d" selected>Last 30 days</option>
-            <option value="mtd">Month to date</option>
-            <option value="lastmonth">Last month</option>
-            <option value="90d">Last 90 days</option>
-            <option value="ytd">Year to date</option>
-            <option value="all">All time</option>
-          </select>
+          <div class="seg" id="f-range" role="group" aria-label="Date range"></div>
           <a class="btn btn-primary" href="#log">+ Log today</a>
         </div>
       </header>
@@ -74,7 +73,9 @@
       <main class="content">
         <!-- ===== Overview ===== -->
         <section class="view" id="view-overview">
-          <div class="section-note" id="today-note" hidden></div>
+          <div class="hero" id="hero"></div>
+          <div class="notice" id="today-note" hidden></div>
+          <div class="notice" id="due-note" hidden></div>
 
           <div class="kpi-grid" id="kpis"></div>
 
@@ -180,6 +181,11 @@
           </div>
         </section>
 
+        <!-- ===== Leads ===== -->
+        <section class="view" id="view-leads" hidden>
+          <div id="leads-root" style="display:grid; gap:20px"></div>
+        </section>
+
         <!-- ===== Entries ===== -->
         <section class="view" id="view-entries" hidden>
           <div class="card">
@@ -235,6 +241,7 @@
   <script src="js/metrics.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/leads.js"></script>
   <script src="js/team.js"></script>
 </body>
 </html>

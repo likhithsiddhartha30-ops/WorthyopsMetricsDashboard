@@ -21,17 +21,19 @@
   const VIEWS = {
     overview: { title: 'My dashboard', filters: true },
     log: { title: 'Log activity', filters: false },
+    leads: { title: 'My leads', filters: false },
     entries: { title: 'My entries', filters: true },
     account: { title: 'Account', filters: false }
   };
 
-  $('#f-range').value = state.range;
-  $('#f-range').addEventListener('change', (e) => {
-    state.range = e.target.value;
+  Dashboard.bindRange($('#f-range'), state.range, (v) => {
+    state.range = v;
     entriesState.page = 0;
     try { localStorage.setItem(PREF_KEY, JSON.stringify({ range: state.range })); } catch (x) { /* ignore */ }
     render();
   });
+  const leadsView = Leads.mount({ root: $('#leads-root'), me, isAdmin: false });
+  const myLeads = () => Store.getLeads().filter((l) => l.ownerId === me.id);
 
   function scope() {
     const mine = Metrics.filter(Store.getEntries(), { userId: me.id });
@@ -50,30 +52,56 @@
     if (!fresh || !fresh.active) { Auth.logout(); return; }
 
     const v = VIEWS[state.view];
-    $('#page-title').textContent = state.view === 'overview' ? `${Dashboard.greeting()}, ${me.name.split(' ')[0]}` : v.title;
-    $('#filters').querySelector('#f-range').style.display = v.filters ? '' : 'none';
+    $('#page-title').textContent = v.title;
+    $('#f-range').style.display = v.filters ? '' : 'none';
     const s = scope();
     $('#page-sub').textContent = v.filters
       ? `${s.range.label} · ${Utils.formatDate(s.range.from)} – ${Utils.formatDate(s.range.to)}`
-      : '';
-    ({ overview: renderOverview, log: renderLog, entries: renderEntries, account: renderAccount })[state.view](s);
+      : state.view === 'leads' ? 'Your prospects, from first message to paid' : '';
+
+    const due = Leads.summarize(myLeads()).due;
+    const badge = $('#nav-leads-count');
+    badge.textContent = due ? due : '';
+    badge.hidden = !due;
+    badge.classList.toggle('alert', due > 0);
+    badge.title = `${due} follow-ups due`;
+
+    ({ overview: renderOverview, log: renderLog, leads: () => leadsView.render(), entries: renderEntries, account: renderAccount })[state.view](s);
   }
 
   function renderOverview(s) {
     const cur = Metrics.totals(s.cur);
     const prev = Metrics.totals(s.prev);
+    const ls = Leads.summarize(myLeads());
+    const progress = Metrics.monthProgress(s.mine, Metrics.memberTargets(Store.getUser(me.id)));
+    const rev = progress.find((p) => p.key === 'revenue');
+
+    Dashboard.renderHero($('#hero'), {
+      eyebrow: s.range.label,
+      title: `${Dashboard.greeting()}, ${me.name.split(' ')[0]}`,
+      text: `You've sent <strong>${num(cur.outreach)}</strong> messages, booked <strong>${num(cur.callsBooked)}</strong> calls and converted <strong>${num(cur.dealsClosed)}</strong> clients. You're at <strong>${Utils.pct(rev ? rev.ratio : 0, 0)}</strong> of this month's revenue target.`,
+      stats: [
+        { label: 'Revenue closed', value: money(cur.revenue) },
+        { label: 'Open pipeline', value: money(ls.pipeline) },
+        { label: 'My leads', value: num(ls.total) }
+      ]
+    });
 
     const todayEntry = Store.findEntry(me.id, Utils.toISO(Utils.today()));
     const note = $('#today-note');
     note.hidden = !!todayEntry;
-    note.innerHTML = 'You haven\'t logged today\'s activity yet. <a href="#log">Log it now →</a>';
+    note.innerHTML = '<span class="dot"></span><span>You haven\'t logged today\'s activity yet.</span><span class="spacer"></span><a href="#log">Log it now →</a>';
+    const dueNote = $('#due-note');
+    dueNote.hidden = !ls.due;
+    dueNote.innerHTML = `<span class="dot"></span><span><strong>${num(ls.due)}</strong> lead follow-up${ls.due === 1 ? ' is' : 's are'} due${ls.overdue ? ` (${num(ls.overdue)} overdue)` : ''}.</span><span class="spacer"></span><a href="#leads">View leads →</a>`;
 
-    Dashboard.renderKpis($('#kpis'), cur, prev);
+    const points = Metrics.timeSeries(s.cur, s.range.from, s.range.to).points;
+    Dashboard.renderKpis($('#kpis'), cur, prev, points);
     Dashboard.renderRates($('#rates'), cur, prev);
     Dashboard.renderFunnel($('#funnel'), cur);
     Dashboard.renderTrendCharts(s.cur, s.range);
     Dashboard.renderCollections(cur);
-    Dashboard.renderTargets($('#targets'), Metrics.monthProgress(s.mine, Metrics.memberTargets(Store.getUser(me.id))));
+    Dashboard.renderTargets($('#targets'), progress);
 
     const showBoard = Store.getSettings().showLeaderboardToTeam;
     $('#leaderboard-card').hidden = !showBoard;

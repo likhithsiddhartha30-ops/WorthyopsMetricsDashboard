@@ -23,10 +23,13 @@ const Charts = (() => {
           bodyColor: c('--text-secondary'),
           borderColor: c('--border-strong'),
           borderWidth: 1,
-          padding: 10,
-          boxPadding: 4,
+          cornerRadius: 10,
+          padding: 12,
+          boxPadding: 5,
           usePointStyle: true,
-          titleFont: { weight: '600' }
+          titleFont: { weight: '600', size: 12.5 },
+          bodyFont: { size: 12.5 },
+          caretSize: 0
         }
       },
       scales: {
@@ -73,7 +76,7 @@ const Charts = (() => {
           label: d.label,
           data: d.data,
           borderColor: series(d.slot),
-          backgroundColor: d.fill ? hexAlpha(series(d.slot), 0.12) : series(d.slot),
+          backgroundColor: d.fill ? fadeFill(series(d.slot)) : series(d.slot),
           fill: !!d.fill,
           borderWidth: 2,
           tension: 0.3,
@@ -162,6 +165,19 @@ const Charts = (() => {
     if (format === 'money') return Utils.money(v);
     if (format === 'pct') return Utils.pct(v);
     return Utils.num(v);
+  }
+
+  /** Vertical gradient fill under a line (scriptable, sized to the chart area). */
+  function fadeFill(hex) {
+    return (ctx) => {
+      const { chart } = ctx;
+      const area = chart.chartArea;
+      if (!area) return hexAlpha(hex, 0.12);
+      const g = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+      g.addColorStop(0, hexAlpha(hex, 0.28));
+      g.addColorStop(1, hexAlpha(hex, 0));
+      return g;
+    };
   }
 
   function hexAlpha(hex, a) {

@@ -22,6 +22,7 @@
   const VIEWS = {
     overview: { title: 'Overview', filters: true },
     team: { title: 'Team performance', filters: true },
+    leads: { title: 'Leads', filters: false },
     activity: { title: 'Activity log', filters: true },
     members: { title: 'Team members', filters: false },
     settings: { title: 'Settings', filters: false }
@@ -54,8 +55,8 @@
     };
   }
 
-  $('#f-range').value = state.range;
-  $('#f-range').addEventListener('change', (e) => { state.range = e.target.value; entriesState.page = 0; savePrefs(); render(); });
+  Dashboard.bindRange($('#f-range'), state.range, (v) => { state.range = v; entriesState.page = 0; savePrefs(); render(); });
+  const leadsView = Leads.mount({ root: $('#leads-root'), me, isAdmin: true });
   $('#f-member').addEventListener('change', (e) => { state.member = e.target.value; entriesState.page = 0; savePrefs(); render(); });
 
   $('#btn-log').addEventListener('click', () => {
@@ -77,21 +78,43 @@
     const s = scope();
     $('#page-sub').textContent = v.filters
       ? `${s.range.label} · ${Utils.formatDate(s.range.from)} – ${Utils.formatDate(s.range.to)}`
-      : '';
-    ({ overview: renderOverview, team: renderTeam, activity: renderActivity, members: renderMembers, settings: renderSettings })[state.view](s);
+      : state.view === 'leads' ? 'Every prospect your team is working, from first message to paid' : '';
+
+    // Sidebar badge: follow-ups due across all leads
+    const due = Leads.summarize(Store.getLeads()).due;
+    const badge = $('#nav-leads-count');
+    badge.textContent = due ? due : '';
+    badge.hidden = !due;
+    badge.classList.toggle('alert', due > 0);
+    badge.title = `${due} follow-ups due`;
+
+    ({ overview: renderOverview, team: renderTeam, leads: () => leadsView.render(), activity: renderActivity, members: renderMembers, settings: renderSettings })[state.view](s);
   }
 
   function renderOverview(s) {
     const cur = Metrics.totals(s.cur);
     const prev = Metrics.totals(s.prev);
-    Dashboard.renderKpis($('#kpis'), cur, prev);
+    const single = state.member !== 'all' ? Store.getUser(state.member) : null;
+    const leads = Store.getLeads().filter((l) => !single || l.ownerId === single.id);
+    const ls = Leads.summarize(leads);
+    Dashboard.renderHero($('#hero'), {
+      eyebrow: `${s.range.label} · ${single ? single.name : 'Whole team'}`,
+      title: `${Dashboard.greeting()}, ${Store.getUser(me.id).name.split(' ')[0]}`,
+      text: `${single ? single.name.split(' ')[0] : 'The team'} sent <strong>${num(cur.outreach)}</strong> messages, booked <strong>${num(cur.callsBooked)}</strong> calls and converted <strong>${num(cur.dealsClosed)}</strong> clients. ${ls.due ? `<strong>${num(ls.due)}</strong> lead follow-ups are due.` : 'No follow-ups are due.'}`,
+      stats: [
+        { label: 'Revenue closed', value: money(cur.revenue) },
+        { label: 'Cash collected', value: money(cur.cashCollected) },
+        { label: 'Open pipeline', value: money(ls.pipeline) }
+      ]
+    });
+    const points = Metrics.timeSeries(s.cur, s.range.from, s.range.to).points;
+    Dashboard.renderKpis($('#kpis'), cur, prev, points);
     Dashboard.renderRates($('#rates'), cur, prev);
     Dashboard.renderFunnel($('#funnel'), cur);
     Dashboard.renderTrendCharts(s.cur, s.range);
     Dashboard.renderCollections(cur);
 
     // Targets: team targets, or one member's targets when filtered
-    const single = state.member !== 'all' ? Store.getUser(state.member) : null;
     const targets = single ? Metrics.memberTargets(single) : Store.getSettings().targets;
     const scoped = single ? Metrics.filter(s.all, { userId: single.id }) : s.all;
     $('#targets-sub').textContent = single ? `${single.name}'s targets` : 'Whole team';
@@ -391,6 +414,13 @@
     if (await Utils.confirmDialog('Delete every logged activity entry for every member? Accounts are kept. Download a backup first if you might need it.', { confirmText: 'Clear activity' })) {
       Store.clearEntries();
       Utils.toast('All activity cleared.');
+    }
+  });
+
+  $('#btn-clear-leads').addEventListener('click', async () => {
+    if (await Utils.confirmDialog('Delete every lead in the lead list? Download a backup or export the leads first if you might need them.', { confirmText: 'Clear leads' })) {
+      Store.clearLeads();
+      Utils.toast('All leads cleared.');
     }
   });
 

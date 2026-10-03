@@ -28,6 +28,7 @@ const Store = (() => {
       version: 1,
       users: [],
       entries: [],
+      leads: [],
       settings: JSON.parse(JSON.stringify(APP_CONFIG.defaultSettings))
     };
   }
@@ -65,7 +66,14 @@ const Store = (() => {
           db.users.push(makeUser({ name: m.name, email: m.email, role: 'member', passwordHash: hash }));
         });
         seedEntries();
+        seedLeads();
       }
+      save();
+    }
+    // Older saved data (before the Leads feature) has no lead list yet
+    if (!Array.isArray(db.leads)) {
+      db.leads = [];
+      if (APP_CONFIG.seedDemoData) seedLeads();
       save();
     }
     // Sync when another tab changes the data
@@ -134,6 +142,65 @@ const Store = (() => {
     });
   }
 
+  function seedLeads() {
+    const members = db.users.filter((u) => u.role === 'member');
+    if (!members.length) return;
+    const rand = Utils.mulberry32(777);
+    const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+    const first = ['Ananya', 'Vikram', 'Meera', 'Arjun', 'Kavya', 'Rahul', 'Isha', 'Karan', 'Divya', 'Nikhil', 'Pooja', 'Siddharth', 'Riya', 'Aditya', 'Neha', 'Varun', 'Tanya', 'Harsh', 'Sana', 'Dev', 'Emma', 'Liam', 'Olivia', 'Noah', 'Sophia', 'James', 'Ava', 'Lucas'];
+    const last = ['Sharma', 'Iyer', 'Gupta', 'Menon', 'Patel', 'Rao', 'Khan', 'Bose', 'Verma', 'Singh', 'Carter', 'Brooks', 'Hayes', 'Reed', 'Morgan', 'Shah'];
+    const biz = ['Fitness Coaching', 'Wellness Studio', 'Mindset Academy', 'Yoga Collective', 'Nutrition Lab', 'Strength Co.', 'Life Coaching', 'Business Mentor', 'Skincare Studio', 'Dance Academy', 'Real Estate Coach', 'Career Coach'];
+    const niches = ['Fitness', 'Wellness', 'Coaching', 'Education', 'Beauty', 'Finance', 'Real estate'];
+    // Weighted stage distribution: most leads sit early in the funnel
+    const stageBag = [...Array(3).fill('new'), ...Array(16).fill('contacted'), ...Array(4).fill('replied'), 'booked', 'booked', 'attended', 'won', 'paid', 'paid', 'lost', 'lost', 'lost'];
+    const order = APP_CONFIG.leadStages.map((s) => s.key);
+    const t = Utils.today();
+
+    members.forEach((m) => {
+      for (let i = 0; i < 22; i++) {
+        const fn = pick(first);
+        const ln = pick(last);
+        const stage = pick(stageBag);
+        const added = Utils.addDays(t, -Math.floor(rand() * 60));
+        const stageDates = {};
+        const reached = stage === 'lost' ? order.indexOf(pick(['contacted', 'replied', 'booked'])) : order.indexOf(stage);
+        let d = added;
+        order.slice(0, reached + 1).forEach((k) => {
+          if (k === 'lost') return;
+          stageDates[k] = Utils.toISO(d);
+          d = Utils.addDays(d, Math.floor(rand() * 4));
+          if (d > t) d = t;
+        });
+        if (stage === 'lost') stageDates.lost = Utils.toISO(d);
+        const late = order.indexOf(stage) >= order.indexOf('booked') && stage !== 'lost';
+        const dealValue = late ? Math.round((1000 + rand() * 1500) / 50) * 50 : 0;
+        const open = ['contacted', 'replied', 'booked', 'attended'].includes(stage);
+        const handle = '@' + (fn + ln).toLowerCase().replace(/[^a-z]/g, '') + (rand() < 0.5 ? '.coach' : '');
+        db.leads.push({
+          id: Utils.uid('l'),
+          name: `${fn} ${ln}`,
+          business: `${ln} ${pick(biz)}`,
+          email: rand() < 0.6 ? `${fn.toLowerCase()}@${ln.toLowerCase()}${pick(['coaching', 'studio', 'academy'])}.com` : '',
+          phone: '',
+          handle,
+          source: pick(['Instagram', 'Instagram', 'Instagram', 'LinkedIn', 'Cold email', 'Referral', 'Facebook']),
+          niche: pick(niches),
+          ownerId: m.id,
+          stage,
+          dealValue,
+          amountPaid: stage === 'paid' ? dealValue : 0,
+          followUps: stage === 'new' ? 0 : Math.floor(rand() * 4),
+          lastContactAt: stage === 'new' ? '' : Utils.toISO(d),
+          nextFollowUpAt: open ? Utils.toISO(Utils.addDays(t, Math.floor(rand() * 10) - 2)) : '',
+          stageDates,
+          notes: '',
+          createdAt: added.toISOString(),
+          updatedAt: d.toISOString()
+        });
+      }
+    });
+  }
+
   // ---------- Users ----------
   const getUsers = () => db.users.slice();
   const getMembers = () => db.users.filter((u) => u.role === 'member');
@@ -181,7 +248,114 @@ const Store = (() => {
     }
     db.users = db.users.filter((x) => x.id !== id);
     db.entries = db.entries.filter((e) => e.userId !== id);
+    // Keep their leads (client data) but mark them unassigned
+    (db.leads || []).forEach((l) => { if (l.ownerId === id) l.ownerId = null; });
     save();
+  }
+
+  // ---------- Leads ----------
+  const STAGE_KEYS = () => APP_CONFIG.leadStages.map((s) => s.key);
+  const getLeads = () => (db.leads || []).slice();
+  const getLead = (id) => (db.leads || []).find((l) => l.id === id) || null;
+
+  function normalizeLead(data, existing) {
+    const name = String(data.name || '').trim();
+    if (!name) throw new Error('Lead name is required.');
+    const stage = STAGE_KEYS().includes(data.stage) ? data.stage : 'new';
+    if (data.ownerId && !getUser(data.ownerId)) throw new Error('Choose a valid owner.');
+    const money = (v, label) => {
+      const n = Number(v || 0);
+      if (!isFinite(n) || n < 0) throw new Error(`${label} must be 0 or more.`);
+      return Math.round(n * 100) / 100;
+    };
+    const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '');
+    return {
+      name: name.slice(0, 120),
+      business: String(data.business || '').trim().slice(0, 120),
+      email: String(data.email || '').trim().slice(0, 160),
+      phone: String(data.phone || '').trim().slice(0, 40),
+      handle: String(data.handle || '').trim().slice(0, 200),
+      source: String(data.source || '').trim().slice(0, 60),
+      niche: String(data.niche || '').trim().slice(0, 60),
+      ownerId: data.ownerId || null,
+      stage,
+      dealValue: money(data.dealValue, 'Deal value'),
+      amountPaid: money(data.amountPaid, 'Amount paid'),
+      followUps: Math.max(0, Math.round(Number(data.followUps || 0)) || 0),
+      lastContactAt: date(data.lastContactAt),
+      nextFollowUpAt: date(data.nextFollowUpAt),
+      notes: String(data.notes || '').slice(0, 1000),
+      stageDates: Object.assign({}, existing ? existing.stageDates : {}, data.stageDates || {})
+    };
+  }
+
+  /** Create or update a lead. Records the date each stage was first reached. */
+  function saveLead(data) {
+    if (!db.leads) db.leads = [];
+    const existing = data.id ? getLead(data.id) : null;
+    const clean = normalizeLead(data, existing);
+    const today = Utils.toISO(Utils.today());
+    if (!clean.stageDates[clean.stage]) clean.stageDates[clean.stage] = today;
+    // Moving past "new" counts as contact
+    if (clean.stage !== 'new' && !clean.lastContactAt) clean.lastContactAt = today;
+    const now = new Date().toISOString();
+    let lead;
+    if (existing) {
+      lead = Object.assign(existing, clean, { updatedAt: now });
+    } else {
+      lead = Object.assign({ id: Utils.uid('l'), createdAt: now, updatedAt: now }, clean);
+      db.leads.push(lead);
+    }
+    save();
+    return lead;
+  }
+
+  function setLeadStage(id, stage) {
+    const l = getLead(id);
+    if (!l) return null;
+    return saveLead(Object.assign({}, l, { stage }));
+  }
+
+  /** Log a follow-up: +1 follow-up, last contact = today. */
+  function logFollowUp(id, nextFollowUpAt = '') {
+    const l = getLead(id);
+    if (!l) return null;
+    return saveLead(Object.assign({}, l, {
+      followUps: (l.followUps || 0) + 1,
+      lastContactAt: Utils.toISO(Utils.today()),
+      nextFollowUpAt,
+      stage: l.stage === 'new' ? 'contacted' : l.stage
+    }));
+  }
+
+  function deleteLead(id) {
+    db.leads = (db.leads || []).filter((l) => l.id !== id);
+    save();
+  }
+
+  function clearLeads() {
+    db.leads = [];
+    save();
+  }
+
+  /** Bulk insert already-mapped lead objects. Returns { added, skipped, errors }. */
+  function importLeads(rows) {
+    if (!db.leads) db.leads = [];
+    let added = 0;
+    const errors = [];
+    const now = new Date().toISOString();
+    rows.forEach((r, i) => {
+      try {
+        const clean = normalizeLead(r, null);
+        if (!clean.stageDates[clean.stage]) clean.stageDates[clean.stage] = Utils.toISO(Utils.today());
+        db.leads.push(Object.assign({ id: Utils.uid('l'), createdAt: now, updatedAt: now }, clean));
+        added++;
+      } catch (e) {
+        errors.push(`Row ${i + 2}: ${e.message}`);
+      }
+    });
+    save();
+    return { added, skipped: errors.length, errors };
   }
 
   // ---------- Entries ----------
@@ -251,6 +425,7 @@ const Store = (() => {
       throw new Error('That file is not a valid dashboard backup.');
     }
     if (!data.users.some((u) => u.role === 'admin')) throw new Error('Backup has no admin account.');
+    if (!Array.isArray(data.leads)) data.leads = [];
     db = data;
     save();
     load();
@@ -267,6 +442,7 @@ const Store = (() => {
     FIELDS, init, subscribe,
     getUsers, getMembers, getUser, getUserByEmail, addUser, updateUser, setPassword, deleteUser,
     getEntries, getEntry, findEntry, upsertEntry, deleteEntry, clearEntries,
+    getLeads, getLead, saveLead, setLeadStage, logFollowUp, deleteLead, importLeads, clearLeads,
     getSettings, updateSettings, exportData, importData, resetAll
   };
 })();

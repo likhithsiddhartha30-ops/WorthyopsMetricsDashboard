@@ -29,6 +29,20 @@ window.APP_CONFIG = {
     { name: 'Sneha Reddy', email: 'sneha@worthyops.com' }
   ],
 
+  // Lead pipeline stages, in order. Keep keys stable - they will be used
+  // to map the "Status" column when we connect the Google Sheet.
+  leadStages: [
+    { key: 'new', label: 'New lead' },
+    { key: 'contacted', label: 'Contacted' },
+    { key: 'replied', label: 'Replied' },
+    { key: 'booked', label: 'Call booked' },
+    { key: 'attended', label: 'Call attended' },
+    { key: 'won', label: 'Converted' },
+    { key: 'paid', label: 'Paid' },
+    { key: 'lost', label: 'Lost' }
+  ],
+  leadSources: ['Instagram', 'LinkedIn', 'Cold email', 'Cold call', 'Facebook', 'Twitter / X', 'Referral', 'Website', 'Other'],
+
   // Defaults the admin can change later from Settings
   defaultSettings: {
     currency: 'USD',

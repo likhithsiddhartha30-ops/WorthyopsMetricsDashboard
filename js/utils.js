@@ -274,6 +274,30 @@ const Utils = (() => {
       .join('\n');
   }
 
+  /** Parse CSV text (handles quoted fields, commas and newlines in quotes). */
+  function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let quoted = false;
+    text = String(text).replace(/^﻿/, '');
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (ch === '"') quoted = false;
+        else field += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        row.push(field); rows.push(row); row = []; field = '';
+      } else field += ch;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows.filter((r) => r.some((c) => String(c).trim() !== ''));
+  }
+
   // ---------- Mobile sidebar ----------
   function bindSidebar() {
     const sidebar = $('.sidebar');
@@ -300,6 +324,6 @@ const Utils = (() => {
     $, $$, cssVar,
     currentTheme, toggleTheme, bindThemeToggles,
     toast, modal, confirmDialog,
-    download, toCSV, bindSidebar
+    download, toCSV, parseCSV, bindSidebar
   };
 })();

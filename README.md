@@ -18,8 +18,18 @@ Default logins are in `js/config.js`. **Change the admin password in Settings af
 |---|---|
 | `index.html` | Portal: pick Admin or Team login |
 | `admin-login.html` / `team-login.html` | The two login pages |
-| `admin.html` | Admin: Overview, Team performance, Activity log, Team members, Settings |
-| `team.html` | Team member: My dashboard, Log activity, My entries, Account |
+| `admin.html` | Admin: Overview, Team performance, Leads, Activity log, Team members, Settings |
+| `team.html` | Team member: My dashboard, Log activity, My leads, My entries, Account |
+
+## Leads (client list)
+
+Every prospect, with name, business, handle/link, email, phone, source, niche, owner, stage, deal value, amount paid, follow-ups, last contact, next follow-up and notes.
+
+- **Stages:** New lead → Contacted → Replied → Call booked → Call attended → Converted → Paid (or Lost). These are defined in `js/config.js`.
+- **Views:** a table (change the stage inline) or a drag-and-drop pipeline board.
+- **Follow-ups:** due and overdue follow-ups are flagged in the sidebar and on the dashboard.
+- **Import:** a CSV exported from Google Sheets (File → Download → CSV). Common column names such as "Client Name", "Instagram", "Status", "Assigned To" and "Date Contacted" are matched automatically.
+- **Who sees what:** admins see every lead. Team members see only their own.
 
 ## What it tracks
 
@@ -39,7 +49,8 @@ js/auth.js          password hashing, sessions, page guards
 js/store.js         data layer (localStorage) - swap this for a real backend
 js/metrics.js       totals, conversion rates, time buckets, per-member stats
 js/charts.js        Chart.js wrappers
-js/dashboard.js     shared UI pieces (KPIs, funnel, targets, entry form, tables)
+js/dashboard.js     shared UI pieces (KPIs, hero, funnel, targets, entry form, tables)
+js/leads.js         lead list: table, pipeline board, lead form, CSV import/export
 js/admin.js         admin page logic
 js/team.js          team page logic
 js/login.js         login page logic

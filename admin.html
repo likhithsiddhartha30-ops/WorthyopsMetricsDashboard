@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard · WorthyOps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
@@ -24,6 +27,11 @@
         <a href="#team">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21V11M16 21V5M12 21v-6M4 21h16"/></svg>
           Team performance
+        </a>
+        <a href="#leads">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>
+          Leads
+          <span class="count" id="nav-leads-count"></span>
         </a>
         <a href="#activity">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
@@ -62,16 +70,7 @@
           <div class="page-sub" id="page-sub"></div>
         </div>
         <div class="filters" id="filters">
-          <label class="sr-only" for="f-range">Date range</label>
-          <select id="f-range" class="select">
-            <option value="7d">Last 7 days</option>
-            <option value="30d" selected>Last 30 days</option>
-            <option value="mtd">Month to date</option>
-            <option value="lastmonth">Last month</option>
-            <option value="90d">Last 90 days</option>
-            <option value="ytd">Year to date</option>
-            <option value="all">All time</option>
-          </select>
+          <div class="seg" id="f-range" role="group" aria-label="Date range"></div>
           <label class="sr-only" for="f-member">Team member</label>
           <select id="f-member" class="select"></select>
           <button class="btn btn-primary" id="btn-log" type="button">+ Log activity</button>
@@ -81,6 +80,7 @@
       <main class="content">
         <!-- ===== Overview ===== -->
         <section class="view" id="view-overview">
+          <div class="hero" id="hero"></div>
           <div class="kpi-grid" id="kpis"></div>
 
           <div class="card">
@@ -199,6 +199,11 @@
               <div class="chart-box" id="member-close-box"><canvas id="chart-member-close" aria-label="Close rate by member chart" role="img"></canvas></div>
             </div>
           </div>
+        </section>
+
+        <!-- ===== Leads ===== -->
+        <section class="view" id="view-leads" hidden>
+          <div id="leads-root" style="display:grid; gap:20px"></div>
         </section>
 
         <!-- ===== Activity log ===== -->
@@ -322,6 +327,7 @@
                 </div>
                 <div class="row">
                   <button class="btn btn-danger" id="btn-clear">Clear all activity</button>
+                  <button class="btn btn-danger" id="btn-clear-leads">Clear all leads</button>
                   <button class="btn btn-danger" id="btn-factory">Factory reset</button>
                 </div>
                 <p class="small muted">"Clear all activity" removes every logged entry (including the demo data) but keeps accounts. "Factory reset" wipes everything and restores the default accounts.</p>
@@ -341,6 +347,7 @@
   <script src="js/metrics.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/leads.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

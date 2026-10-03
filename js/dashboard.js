@@ -21,6 +21,19 @@ const Dashboard = (() => {
     show();
   }
 
+  // ---------- Icons ----------
+  const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const ICONS = {
+    outreach: svg('<path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/>'),
+    replies: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+    callsBooked: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+    callsShown: svg('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>'),
+    dealsClosed: svg('<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14l-3-3"/>'),
+    paid: svg('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'),
+    revenue: svg('<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>'),
+    cashCollected: svg('<path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>')
+  };
+
   // ---------- KPI tiles ----------
   const KPI_DEFS = [
     { key: 'outreach', label: 'Outreach sent', sub: (t, r) => `${num(t.followUps)} follow-ups` },
@@ -36,19 +49,87 @@ const Dashboard = (() => {
   function deltaHtml(cur, prev) {
     const d = Metrics.delta(cur, prev);
     if (!isFinite(d.value)) return '<span class="delta flat" title="No data in the previous period">—</span>';
-    const arrow = d.dir === 'up' ? '▲' : d.dir === 'down' ? '▼' : '•';
-    const label = `${d.dir === 'down' ? '-' : d.dir === 'up' ? '+' : ''}${Math.abs(d.value * 100).toFixed(0)}%`;
-    return `<span class="delta ${d.dir}" title="vs previous period">${arrow} ${label}</span>`;
+    const arrow = d.dir === 'up' ? '↑' : d.dir === 'down' ? '↓' : '';
+    const label = `${Math.abs(d.value * 100).toFixed(0)}%`;
+    return `<span class="delta ${d.dir}" title="vs previous period">${arrow}${label}</span>`;
   }
 
-  function renderKpis(el, cur, prev) {
+  /** Tiny trend line for a KPI tile. */
+  function sparkline(values, id) {
+    if (!values || values.length < 2) return '';
+    const max = Math.max(...values, 1);
+    const step = 100 / (values.length - 1);
+    const pts = values.map((v, i) => `${(i * step).toFixed(2)},${(30 - (v / max) * 26 - 2).toFixed(2)}`);
+    return `
+      <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
+        <defs><linearGradient id="sf-${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--accent)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="M0,30 L${pts.join(' L')} L100,30 Z" fill="url(#sf-${id})"/>
+        <polyline class="line" points="${pts.join(' ')}" vector-effect="non-scaling-stroke"/>
+      </svg>`;
+  }
+
+  /** points: optional timeSeries points for sparklines. */
+  function renderKpis(el, cur, prev, points) {
     const r = Metrics.derive(cur);
     el.innerHTML = KPI_DEFS.map((k) => `
       <div class="kpi">
-        <div class="kpi-label">${k.label}</div>
-        <div class="kpi-value">${k.money ? money(cur[k.key]) : num(cur[k.key])}</div>
-        <div class="kpi-foot"><span>${k.sub(cur, r)}</span>${deltaHtml(cur[k.key], prev[k.key])}</div>
+        <div class="kpi-top">
+          <div class="kpi-label"><span class="kpi-icon">${ICONS[k.key]}</span>${k.label}</div>
+          ${deltaHtml(cur[k.key], prev[k.key])}
+        </div>
+        <div class="kpi-value" data-count="${cur[k.key]}" data-format="${k.money ? 'money' : 'num'}">${k.money ? money(cur[k.key]) : num(cur[k.key])}</div>
+        <div class="kpi-sub">${k.sub(cur, r)}</div>
+        <div class="kpi-spark">${points ? sparkline(points.map((p) => p.totals[k.key]), k.key) : ''}</div>
       </div>`).join('');
+    countUp(el);
+  }
+
+  /** Animate [data-count] numbers from 0 to their value. */
+  function countUp(root) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    $$('[data-count]', root).forEach((el) => {
+      const target = Number(el.dataset.count) || 0;
+      const fmt = el.dataset.format === 'money' ? money : num;
+      const start = performance.now();
+      const dur = 700;
+      const tick = (now) => {
+        const p = Math.min(1, (now - start) / dur);
+        el.textContent = fmt(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  // ---------- Hero ----------
+  /** opts: { eyebrow, title, text (HTML), stats: [{label, value}] } */
+  function renderHero(el, opts) {
+    el.innerHTML = `
+      <div>
+        <div class="hero-eyebrow">${esc(opts.eyebrow)}</div>
+        <h2>${esc(opts.title)}</h2>
+        <p>${opts.text}</p>
+      </div>
+      <div class="hero-stats">
+        ${opts.stats.map((s) => `<div class="hero-stat"><div class="l">${esc(s.label)}</div><div class="v">${s.value}</div></div>`).join('')}
+      </div>`;
+  }
+
+  // ---------- Segmented date range ----------
+  const RANGES = [
+    ['7d', '7D'], ['30d', '30D'], ['mtd', 'MTD'], ['lastmonth', 'Last month'], ['90d', '90D'], ['ytd', 'YTD'], ['all', 'All']
+  ];
+
+  function bindRange(el, value, onChange) {
+    el.innerHTML = RANGES.map(([k, l]) => `<button type="button" data-range="${k}" aria-pressed="${k === value}">${l}</button>`).join('');
+    const paint = (v) => $$('[data-range]', el).forEach((b) => {
+      b.classList.toggle('active', b.dataset.range === v);
+      b.setAttribute('aria-pressed', String(b.dataset.range === v));
+    });
+    paint(value);
+    $$('[data-range]', el).forEach((b) => b.addEventListener('click', () => { paint(b.dataset.range); onChange(b.dataset.range); }));
   }
 
   // ---------- Rate strip ----------
@@ -118,7 +199,7 @@ const Dashboard = (() => {
             <div class="progress-bar ${p.ratio >= 1 ? 'done' : ''}" style="width:${w}%"></div>
             <div class="progress-pace" style="left:${Math.min(100, p.pace * 100)}%" title="Where you should be today"></div>
           </div>
-          <div class="target-foot">${pct(p.ratio, 0)} done · ${ahead ? '✓ on pace' : '⚠ behind pace'} · projected ${f(p.projected)}</div>
+          <div class="target-foot"><span class="badge ${ahead ? 'badge-good' : 'badge-warn'}">${ahead ? '✓ On pace' : '⚠ Behind pace'}</span>${pct(p.ratio, 0)} done · projected ${f(p.projected)}</div>
         </div>`;
     }).join('') + '<p class="small muted">The dark tick marks where you should be today to hit the monthly target.</p>';
   }
@@ -417,7 +498,7 @@ const Dashboard = (() => {
   }
 
   return {
-    router, renderKpis, renderRates, renderFunnel, renderTargets, renderTrendCharts, renderCollections,
+    router, renderKpis, renderHero, bindRange, countUp, renderRates, renderFunnel, renderTargets, renderTrendCharts, renderCollections,
     renderLeaderboard, entryForm, openEntryModal, renderEntriesTable, bindSortHeaders, entriesToCSV,
     fillUserChip, greeting, legend
   };
