@@ -23,6 +23,7 @@
     overview: { title: 'Overview', filters: true },
     team: { title: 'Team performance', filters: true },
     leads: { title: 'Leads', filters: false },
+    content: { title: 'Content', filters: true, noMember: true },
     activity: { title: 'Activity log', filters: true },
     members: { title: 'Team members', filters: false },
     settings: { title: 'Settings', filters: false }
@@ -57,6 +58,7 @@
 
   Dashboard.bindRange($('#f-range'), state.range, (v) => { state.range = v; entriesState.page = 0; savePrefs(); render(); });
   const leadsView = Leads.mount({ root: $('#leads-root'), me, isAdmin: true });
+  const contentView = Content.mount({ root: $('#content-root'), me });
   $('#f-member').addEventListener('change', (e) => { state.member = e.target.value; entriesState.page = 0; savePrefs(); render(); });
 
   $('#btn-log').addEventListener('click', () => {
@@ -74,6 +76,7 @@
     const v = VIEWS[state.view];
     $('#page-title').textContent = v.title;
     $('#filters').style.visibility = v.filters ? 'visible' : 'hidden';
+    $('#f-member').hidden = !!v.noMember;
     fillMemberFilter();
     const s = scope();
     $('#page-sub').textContent = v.filters
@@ -88,7 +91,7 @@
     badge.classList.toggle('alert', due > 0);
     badge.title = `${due} follow-ups due`;
 
-    ({ overview: renderOverview, team: renderTeam, leads: () => leadsView.render(), activity: renderActivity, members: renderMembers, settings: renderSettings })[state.view](s);
+    ({ overview: renderOverview, team: renderTeam, leads: () => leadsView.render(), content: () => contentView.render(s.range), activity: renderActivity, members: renderMembers, settings: renderSettings })[state.view](s);
   }
 
   function renderOverview(s) {

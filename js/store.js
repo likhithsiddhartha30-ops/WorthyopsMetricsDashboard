@@ -29,6 +29,7 @@ const Store = (() => {
       users: [],
       entries: [],
       leads: [],
+      contents: [],
       settings: JSON.parse(JSON.stringify(APP_CONFIG.defaultSettings))
     };
   }
@@ -67,6 +68,7 @@ const Store = (() => {
         });
         seedEntries();
         seedLeads();
+        seedContent();
       }
       save();
     }
@@ -74,6 +76,12 @@ const Store = (() => {
     if (!Array.isArray(db.leads)) {
       db.leads = [];
       if (APP_CONFIG.seedDemoData) seedLeads();
+      save();
+    }
+    // ...or no content library yet
+    if (!Array.isArray(db.contents)) {
+      db.contents = [];
+      if (APP_CONFIG.seedDemoData) seedContent();
       save();
     }
     // Sync when another tab changes the data
@@ -185,6 +193,8 @@ const Store = (() => {
           handle,
           source: pick(['Instagram', 'Instagram', 'Instagram', 'LinkedIn', 'Cold email', 'Referral', 'Facebook']),
           niche: pick(niches),
+          origin: 'outbound',
+          contentId: null,
           ownerId: m.id,
           stage,
           dealValue,
@@ -195,6 +205,101 @@ const Store = (() => {
           stageDates,
           notes: '',
           createdAt: added.toISOString(),
+          updatedAt: d.toISOString()
+        });
+      }
+    });
+  }
+
+  /** Demo content library + the inbound leads each piece generated. */
+  function seedContent() {
+    const members = db.users.filter((u) => u.role === 'member');
+    if (!members.length) return;
+    const rand = Utils.mulberry32(4242);
+    const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+    const t = Utils.today();
+    const order = APP_CONFIG.leadStages.map((s) => s.key);
+    const pieces = [
+      ['organic', 'Instagram', 'Reel', '3 mistakes killing your coaching sales'],
+      ['organic', 'Instagram', 'Carousel', 'How we booked 40 calls in 30 days'],
+      ['organic', 'YouTube', 'Long-form video', 'Full breakdown: our $50k/month funnel'],
+      ['organic', 'Instagram', 'Reel', 'Why your DMs get ignored'],
+      ['organic', 'LinkedIn', 'Post', 'Client case study: 0 to 12 clients'],
+      ['organic', 'Instagram', 'Story', 'Free audit - reply "AUDIT"'],
+      ['organic', 'YouTube', 'Short', 'The 1-line DM opener that works'],
+      ['organic', 'Instagram', 'Reel', 'Stop selling, start diagnosing'],
+      ['organic', 'Instagram', 'Live / Webinar', 'Live Q&A: scaling to 6 figures'],
+      ['organic', 'Newsletter', 'Post', 'Weekly playbook #12'],
+      ['paid', 'Instagram', 'Ad - Video', 'VSL ad - Book a free strategy call'],
+      ['paid', 'Facebook', 'Lead form', 'Lead magnet: Coaching sales script'],
+      ['paid', 'Instagram', 'Ad - Carousel', 'Case study ad - 3 client wins'],
+      ['paid', 'YouTube', 'Ad - Video', 'Pre-roll: Free funnel teardown'],
+      ['paid', 'Facebook', 'Ad - Image', 'Retargeting - Apply now']
+    ];
+    // Inbound funnels convert better than cold outbound
+    const stageBag = ['new', 'contacted', 'contacted', 'replied', 'replied', 'replied', 'booked', 'booked', 'booked', 'attended', 'attended', 'won', 'paid', 'paid', 'lost', 'lost'];
+    const first = ['Aisha', 'Rohit', 'Simran', 'Kunal', 'Ishaan', 'Mira', 'Zoya', 'Yash', 'Nisha', 'Raj', 'Chloe', 'Ethan', 'Grace', 'Mason', 'Leah', 'Omar'];
+    const last = ['Kapoor', 'Joshi', 'Malhotra', 'Nair', 'Desai', 'Pillai', 'Chopra', 'Agarwal', 'Bennett', 'Foster', 'Hughes', 'Ward'];
+
+    pieces.forEach(([channel, platform, format, title], i) => {
+      const published = Utils.addDays(t, -Math.floor(5 + rand() * 80));
+      const views = channel === 'organic'
+        ? Math.round((platform === 'YouTube' ? 2000 + rand() * 18000 : 4000 + rand() * 60000) / 10) * 10
+        : Math.round((8000 + rand() * 50000) / 10) * 10;
+      const adSpend = channel === 'paid' ? Math.round((300 + rand() * 1700) / 10) * 10 : 0;
+      const content = {
+        id: Utils.uid('c'),
+        title, channel, platform, format,
+        url: '',
+        publishedAt: Utils.toISO(published),
+        views,
+        adSpend,
+        notes: '',
+        createdAt: published.toISOString(),
+        updatedAt: published.toISOString()
+      };
+      db.contents.push(content);
+
+      const leadCount = channel === 'paid' ? 4 + Math.floor(rand() * 9) : 1 + Math.floor(rand() * 8);
+      for (let k = 0; k < leadCount; k++) {
+        const fn = pick(first);
+        const ln = pick(last);
+        const stage = pick(stageBag);
+        const added = Utils.addDays(published, Math.floor(rand() * 10));
+        const created = added > t ? t : added;
+        const stageDates = {};
+        const reachedIdx = stage === 'lost' ? order.indexOf(pick(['replied', 'booked', 'attended'])) : order.indexOf(stage);
+        let d = created;
+        order.slice(0, reachedIdx + 1).forEach((s) => {
+          stageDates[s] = Utils.toISO(d);
+          d = Utils.addDays(d, Math.floor(rand() * 3));
+          if (d > t) d = t;
+        });
+        if (stage === 'lost') stageDates.lost = Utils.toISO(d);
+        const late = reachedIdx >= order.indexOf('booked') && stage !== 'lost';
+        const dealValue = late ? Math.round((1200 + rand() * 1800) / 50) * 50 : 0;
+        const open = ['contacted', 'replied', 'booked', 'attended'].includes(stage);
+        db.leads.push({
+          id: Utils.uid('l'),
+          name: `${fn} ${ln}`,
+          business: '',
+          email: rand() < 0.7 ? `${fn.toLowerCase()}.${ln.toLowerCase()}@gmail.com` : '',
+          phone: '',
+          handle: '@' + (fn + ln).toLowerCase(),
+          source: platform === 'Website / Blog' || platform === 'Newsletter' ? 'Website' : platform,
+          niche: '',
+          origin: channel,
+          contentId: content.id,
+          ownerId: members[(i + k) % members.length].id,
+          stage,
+          dealValue,
+          amountPaid: stage === 'paid' ? dealValue : stage === 'won' ? Math.round(dealValue * 0.5) : 0,
+          followUps: Math.floor(rand() * 3),
+          lastContactAt: stage === 'new' ? '' : Utils.toISO(d),
+          nextFollowUpAt: open ? Utils.toISO(Utils.addDays(t, Math.floor(rand() * 8) - 1)) : '',
+          stageDates,
+          notes: '',
+          createdAt: created.toISOString(),
           updatedAt: d.toISOString()
         });
       }
@@ -269,7 +374,14 @@ const Store = (() => {
       return Math.round(n * 100) / 100;
     };
     const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '');
+    const content = data.contentId ? getContent(data.contentId) : null;
+    // A lead linked to a piece of content takes that content's channel
+    const origin = content
+      ? content.channel
+      : APP_CONFIG.leadOrigins.some((o) => o.key === data.origin) ? data.origin : 'outbound';
     return {
+      origin,
+      contentId: content ? content.id : null,
       name: name.slice(0, 120),
       business: String(data.business || '').trim().slice(0, 120),
       email: String(data.email || '').trim().slice(0, 160),
@@ -330,6 +442,54 @@ const Store = (() => {
 
   function deleteLead(id) {
     db.leads = (db.leads || []).filter((l) => l.id !== id);
+    save();
+  }
+
+  // ---------- Content library ----------
+  const getContents = () => (db.contents || []).slice();
+  const getContent = (id) => (db.contents || []).find((c) => c.id === id) || null;
+
+  function saveContent(data) {
+    if (!db.contents) db.contents = [];
+    const title = String(data.title || '').trim();
+    if (!title) throw new Error('Give this content a title.');
+    const channel = data.channel === 'paid' ? 'paid' : 'organic';
+    const n = (v, label) => {
+      const x = Number(v || 0);
+      if (!isFinite(x) || x < 0) throw new Error(`${label} must be 0 or more.`);
+      return Math.round(x * 100) / 100;
+    };
+    const url = String(data.url || '').trim();
+    if (url && !/^https?:\/\//i.test(url)) throw new Error('Link must start with http:// or https://');
+    const clean = {
+      title: title.slice(0, 160),
+      channel,
+      platform: String(data.platform || '').slice(0, 60),
+      format: String(data.format || '').slice(0, 60),
+      url: url.slice(0, 500),
+      publishedAt: /^\d{4}-\d{2}-\d{2}$/.test(data.publishedAt || '') ? data.publishedAt : Utils.toISO(Utils.today()),
+      views: Math.round(n(data.views, 'Views')),
+      adSpend: channel === 'paid' ? n(data.adSpend, 'Ad spend') : 0,
+      notes: String(data.notes || '').slice(0, 1000)
+    };
+    const now = new Date().toISOString();
+    let c = data.id ? getContent(data.id) : null;
+    if (c) {
+      Object.assign(c, clean, { updatedAt: now });
+      // Keep linked leads' channel in sync if organic/paid changed
+      (db.leads || []).forEach((l) => { if (l.contentId === c.id) l.origin = c.channel; });
+    } else {
+      c = Object.assign({ id: Utils.uid('c'), createdAt: now, updatedAt: now }, clean);
+      db.contents.push(c);
+    }
+    save();
+    return c;
+  }
+
+  /** Deletes the content; its leads stay but lose the link (keep their channel). */
+  function deleteContent(id) {
+    db.contents = (db.contents || []).filter((c) => c.id !== id);
+    (db.leads || []).forEach((l) => { if (l.contentId === id) l.contentId = null; });
     save();
   }
 
@@ -426,6 +586,7 @@ const Store = (() => {
     }
     if (!data.users.some((u) => u.role === 'admin')) throw new Error('Backup has no admin account.');
     if (!Array.isArray(data.leads)) data.leads = [];
+    if (!Array.isArray(data.contents)) data.contents = [];
     db = data;
     save();
     load();
@@ -443,6 +604,7 @@ const Store = (() => {
     getUsers, getMembers, getUser, getUserByEmail, addUser, updateUser, setPassword, deleteUser,
     getEntries, getEntry, findEntry, upsertEntry, deleteEntry, clearEntries,
     getLeads, getLead, saveLead, setLeadStage, logFollowUp, deleteLead, importLeads, clearLeads,
+    getContents, getContent, saveContent, deleteContent,
     getSettings, updateSettings, exportData, importData, resetAll
   };
 })();

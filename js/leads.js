@@ -70,13 +70,142 @@ const Leads = (() => {
     return `<span class="due">${label}</span>`;
   }
 
+  // ---------- Origin (outbound / organic / paid) ----------
+  const ORIGIN_SLOT = { outbound: 1, paid: 2, organic: 3 };
+  const ORIGIN_SHORT = { outbound: 'Outbound', organic: 'Organic', paid: 'Paid ads' };
+  const originOf = (l) => l.origin || 'outbound';
+
+  function originPill(l) {
+    const o = originOf(l);
+    return `<span class="stage-pill"><i style="background:var(--series-${ORIGIN_SLOT[o]})"></i>${ORIGIN_SHORT[o]}</span>`;
+  }
+
+  /** <option>s for picking a piece of content, grouped organic / paid. */
+  function contentOptions(selectedId) {
+    const list = Store.getContents().sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+    const group = (ch, label) => {
+      const items = list.filter((c) => c.channel === ch);
+      return items.length
+        ? `<optgroup label="${label}">${items.map((c) => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${esc(c.title)} · ${esc(c.platform || '')}</option>`).join('')}</optgroup>`
+        : '';
+    };
+    return `<option value="">Not linked to a specific post / ad</option>${group('organic', 'Organic content')}${group('paid', 'Paid ads')}`;
+  }
+
+  // ---------- Lead form (shared by Leads and Content pages) ----------
+  /** ctx: { me, isAdmin, prefill } */
+  function openLeadForm(lead, ctx) {
+    const { me, isAdmin } = ctx;
+    const l = lead || Object.assign({ stage: 'new', ownerId: isAdmin ? null : me.id, source: '', origin: 'outbound' }, ctx.prefill || {});
+    const members = Store.getMembers();
+    const sourceOpts = APP_CONFIG.leadSources.includes(l.source) || !l.source
+      ? APP_CONFIG.leadSources
+      : [l.source, ...APP_CONFIG.leadSources];
+    const m = Utils.modal({
+      title: lead ? 'Edit lead' : 'Add lead',
+      subtitle: lead ? `Added ${Utils.formatDate((lead.createdAt || '').slice(0, 10) || todayISO())}` : 'Add a prospect to the lead list.',
+      body: `
+        <form class="form-grid" novalidate>
+          <div class="form-section-title">Contact</div>
+          <div class="field"><label for="lf-name">Name *</label><input id="lf-name" class="input" value="${esc(l.name || '')}" required></div>
+          <div class="field"><label for="lf-business">Business / brand</label><input id="lf-business" class="input" value="${esc(l.business || '')}"></div>
+          <div class="field"><label for="lf-handle">Handle / profile link</label><input id="lf-handle" class="input" value="${esc(l.handle || '')}" placeholder="@handle or URL"></div>
+          <div class="field"><label for="lf-email">Email</label><input id="lf-email" class="input" type="email" value="${esc(l.email || '')}"></div>
+          <div class="field"><label for="lf-phone">Phone</label><input id="lf-phone" class="input" value="${esc(l.phone || '')}"></div>
+          <div class="field"><label for="lf-niche">Niche</label><input id="lf-niche" class="input" value="${esc(l.niche || '')}" placeholder="e.g. Fitness"></div>
+
+          <div class="form-section-title">Where did this lead come from?</div>
+          <div class="field"><label for="lf-origin">Lead type</label>
+            <select id="lf-origin" class="select">${APP_CONFIG.leadOrigins.map((o) => `<option value="${o.key}" ${o.key === originOf(l) ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label for="lf-content">Content / ad</label>
+            <select id="lf-content" class="select">${contentOptions(l.contentId)}</select>
+            <span class="hint">For inbound leads - which post or ad brought them in.</span>
+          </div>
+          <div class="field"><label for="lf-source">Platform</label>
+            <select id="lf-source" class="select"><option value="">—</option>${sourceOpts.map((s) => `<option ${s === l.source ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+          </div>
+
+          <div class="form-section-title">Pipeline</div>
+          ${isAdmin ? `<div class="field"><label for="lf-owner">Owner</label>
+            <select id="lf-owner" class="select"><option value="">Unassigned</option>${members.map((u) => `<option value="${u.id}" ${u.id === l.ownerId ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select>
+          </div>` : ''}
+          <div class="field"><label for="lf-stage">Stage</label>
+            <select id="lf-stage" class="select">${STAGES.map((s) => `<option value="${s.key}" ${s.key === l.stage ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label for="lf-deal">Deal value (${esc(Store.getSettings().currency)})</label><input id="lf-deal" class="input" type="number" min="0" step="0.01" value="${l.dealValue || ''}" placeholder="0"></div>
+          <div class="field"><label for="lf-paid">Amount paid</label><input id="lf-paid" class="input" type="number" min="0" step="0.01" value="${l.amountPaid || ''}" placeholder="0"></div>
+          <div class="field"><label for="lf-fu">Follow-ups sent</label><input id="lf-fu" class="input" type="number" min="0" step="1" value="${l.followUps || ''}" placeholder="0"></div>
+          <div class="field"><label for="lf-last">Last contact</label><input id="lf-last" class="input" type="date" value="${esc(l.lastContactAt || '')}"></div>
+          <div class="field"><label for="lf-next">Next follow-up</label><input id="lf-next" class="input" type="date" value="${esc(l.nextFollowUpAt || '')}"></div>
+          <div class="field span-all"><label for="lf-notes">Notes</label><textarea id="lf-notes" class="input" maxlength="1000" placeholder="Context, objections, what they need…">${esc(l.notes || '')}</textarea></div>
+          <div class="form-error span-all" hidden></div>
+          <div class="form-actions span-all">
+            <button type="button" class="btn" data-act="cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">${lead ? 'Save lead' : 'Add lead'}</button>
+          </div>
+        </form>`
+    });
+    m.root.querySelector('.modal').style.width = 'min(720px, 100%)';
+    const r = m.root;
+
+    // Picking a post/ad sets the lead type to match; outbound clears the link
+    const originSel = $('#lf-origin', r);
+    const contentSel = $('#lf-content', r);
+    contentSel.addEventListener('change', () => {
+      const c = Store.getContent(contentSel.value);
+      if (c) {
+        originSel.value = c.channel;
+        const src = $('#lf-source', r);
+        if (!src.value && APP_CONFIG.leadSources.includes(c.platform)) src.value = c.platform;
+      }
+    });
+    originSel.addEventListener('change', () => {
+      const c = Store.getContent(contentSel.value);
+      if (c && c.channel !== originSel.value) contentSel.value = '';
+    });
+
+    $('[data-act="cancel"]', r).onclick = m.close;
+    $('form', r).addEventListener('submit', (e) => {
+      e.preventDefault();
+      try {
+        Store.saveLead({
+          id: lead ? lead.id : undefined,
+          name: $('#lf-name', r).value,
+          business: $('#lf-business', r).value,
+          handle: $('#lf-handle', r).value,
+          email: $('#lf-email', r).value,
+          phone: $('#lf-phone', r).value,
+          niche: $('#lf-niche', r).value,
+          origin: originSel.value,
+          contentId: contentSel.value || null,
+          source: $('#lf-source', r).value,
+          ownerId: isAdmin ? $('#lf-owner', r).value || null : me.id,
+          stage: $('#lf-stage', r).value,
+          dealValue: $('#lf-deal', r).value,
+          amountPaid: $('#lf-paid', r).value,
+          followUps: $('#lf-fu', r).value,
+          lastContactAt: $('#lf-last', r).value,
+          nextFollowUpAt: $('#lf-next', r).value,
+          notes: $('#lf-notes', r).value
+        });
+        m.close();
+        Utils.toast(lead ? 'Lead saved.' : 'Lead added.');
+      } catch (x) {
+        const err = $('.form-error', r);
+        err.textContent = x.message;
+        err.hidden = false;
+      }
+    });
+  }
+
   // ======================================================================
   // Mount: builds the whole Leads view inside `root`.
   // opts: { root, me, isAdmin }
   // ======================================================================
   function mount({ root, me, isAdmin }) {
     const PREF = 'worthyops_leads_view';
-    const state = { q: '', stage: 'all', source: 'all', owner: 'all', mode: 'table', sortKey: 'updatedAt', sortDir: 'desc', page: 0 };
+    const state = { q: '', stage: 'all', origin: 'all', source: 'all', owner: 'all', mode: 'table', sortKey: 'updatedAt', sortDir: 'desc', page: 0 };
     try { state.mode = localStorage.getItem(PREF) || 'table'; } catch (e) { /* ignore */ }
 
     root.innerHTML = `
@@ -95,8 +224,13 @@ const Leads = (() => {
             <option value="due">Follow-up due</option>
             ${STAGES.map((s) => `<option value="${s.key}">${esc(s.label)}</option>`).join('')}
           </select>
-          <select class="select" id="ld-source" aria-label="Filter by source">
-            <option value="all">All sources</option>
+          <select class="select" id="ld-origin" aria-label="Filter by lead type">
+            <option value="all">All lead types</option>
+            <option value="inbound">Inbound (all)</option>
+            ${APP_CONFIG.leadOrigins.map((o) => `<option value="${o.key}">${esc(o.label)}</option>`).join('')}
+          </select>
+          <select class="select" id="ld-source" aria-label="Filter by platform">
+            <option value="all">All platforms</option>
             ${APP_CONFIG.leadSources.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
           </select>
           ${isAdmin ? '<select class="select" id="ld-owner" aria-label="Filter by owner"></select>' : ''}
@@ -131,6 +265,7 @@ const Leads = (() => {
 
     $('#ld-q', root).addEventListener('input', (e) => { state.q = e.target.value.trim().toLowerCase(); state.page = 0; render(); });
     $('#ld-stage', root).addEventListener('change', (e) => { state.stage = e.target.value; state.page = 0; render(); });
+    $('#ld-origin', root).addEventListener('change', (e) => { state.origin = e.target.value; state.page = 0; render(); });
     $('#ld-source', root).addEventListener('change', (e) => { state.source = e.target.value; state.page = 0; render(); });
     if (ownerSel) ownerSel.addEventListener('change', (e) => { state.owner = e.target.value; state.page = 0; render(); });
     $$('[data-mode]', root).forEach((b) => b.addEventListener('click', () => {
@@ -156,6 +291,8 @@ const Leads = (() => {
         if (state.stage === 'open' && !OPEN.includes(l.stage)) return false;
         if (state.stage === 'due' && !['overdue', 'today'].includes(followUpState(l))) return false;
         if (!['all', 'open', 'due'].includes(state.stage) && l.stage !== state.stage) return false;
+        if (state.origin === 'inbound' && originOf(l) === 'outbound') return false;
+        if (!['all', 'inbound'].includes(state.origin) && originOf(l) !== state.origin) return false;
         if (state.source !== 'all' && l.source !== state.source) return false;
         if (isAdmin && state.owner === 'none' && l.ownerId) return false;
         if (isAdmin && !['all', 'none'].includes(state.owner) && l.ownerId !== state.owner) return false;
@@ -211,7 +348,7 @@ const Leads = (() => {
             <thead><tr>
               ${th('name', 'Lead')}
               <th>Contact</th>
-              ${th('source', 'Source')}
+              ${th('origin', 'Came from')}
               ${isAdmin ? th('owner', 'Owner') : ''}
               ${th('stage', 'Stage')}
               ${th('dealValue', 'Deal value', 'num')}
@@ -261,7 +398,7 @@ const Leads = (() => {
       return `<tr>
         <td><div class="lead-cell"><span class="n">${esc(l.name)}</span><span class="b">${esc(l.business || l.niche || '')}</span></div></td>
         <td><div class="lead-cell"><span>${contact[0] ? handleLink(contact[0]) : '<span class="muted">—</span>'}</span><span class="b">${esc(contact[1] || '')}</span></div></td>
-        <td>${l.source ? `<span class="badge">${esc(l.source)}</span>` : '<span class="muted">—</span>'}</td>
+        <td><div class="lead-cell">${originPill(l)}<span class="b" style="margin-top:3px; max-width:200px; overflow:hidden; text-overflow:ellipsis">${esc([l.source, (Store.getContent(l.contentId) || {}).title].filter(Boolean).join(' · '))}</span></div></td>
         ${isAdmin ? `<td>${owner ? `<span class="member-cell"><span class="avatar">${esc(Utils.initials(owner.name))}</span>${esc(owner.name.split(' ')[0])}</span>` : '<span class="badge badge-warn">Unassigned</span>'}</td>` : ''}
         <td>
           <select class="select stage-select" data-stage-for="${l.id}" aria-label="Stage for ${esc(l.name)}" style="border-color:${STAGE_COLOR[l.stage]}">
@@ -328,7 +465,7 @@ const Leads = (() => {
             ${isAdmin && owner ? `<span class="avatar" title="${esc(owner.name)}">${esc(Utils.initials(owner.name))}</span>` : ''}
           </div>
           <div class="meta">
-            ${l.source ? `<span class="badge">${esc(l.source)}</span>` : ''}
+            ${originPill(l)}
             ${l.dealValue ? `<span class="val">${money(l.dealValue)}</span>` : ''}
             ${l.nextFollowUpAt && OPEN.includes(l.stage) ? `<span>${dueHtml(l)}</span>` : ''}
           </div>
@@ -336,81 +473,7 @@ const Leads = (() => {
     }
 
     // ----- Modals -----
-    function openLeadModal(lead) {
-      const l = lead || { stage: 'new', ownerId: isAdmin ? null : me.id, source: '' };
-      const members = Store.getMembers();
-      const sourceOpts = APP_CONFIG.leadSources.includes(l.source) || !l.source
-        ? APP_CONFIG.leadSources
-        : [l.source, ...APP_CONFIG.leadSources];
-      const m = Utils.modal({
-        title: lead ? 'Edit lead' : 'Add lead',
-        subtitle: lead ? `Added ${Utils.formatDate((lead.createdAt || '').slice(0, 10) || todayISO())}` : 'Add a prospect to the lead list.',
-        body: `
-          <form class="form-grid" novalidate>
-            <div class="form-section-title">Contact</div>
-            <div class="field"><label for="lf-name">Name *</label><input id="lf-name" class="input" value="${esc(l.name || '')}" required></div>
-            <div class="field"><label for="lf-business">Business / brand</label><input id="lf-business" class="input" value="${esc(l.business || '')}"></div>
-            <div class="field"><label for="lf-handle">Handle / profile link</label><input id="lf-handle" class="input" value="${esc(l.handle || '')}" placeholder="@handle or URL"></div>
-            <div class="field"><label for="lf-email">Email</label><input id="lf-email" class="input" type="email" value="${esc(l.email || '')}"></div>
-            <div class="field"><label for="lf-phone">Phone</label><input id="lf-phone" class="input" value="${esc(l.phone || '')}"></div>
-            <div class="field"><label for="lf-niche">Niche</label><input id="lf-niche" class="input" value="${esc(l.niche || '')}" placeholder="e.g. Fitness"></div>
-            <div class="field"><label for="lf-source">Source</label>
-              <select id="lf-source" class="select"><option value="">—</option>${sourceOpts.map((s) => `<option ${s === l.source ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
-            </div>
-
-            <div class="form-section-title">Pipeline</div>
-            ${isAdmin ? `<div class="field"><label for="lf-owner">Owner</label>
-              <select id="lf-owner" class="select"><option value="">Unassigned</option>${members.map((u) => `<option value="${u.id}" ${u.id === l.ownerId ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select>
-            </div>` : ''}
-            <div class="field"><label for="lf-stage">Stage</label>
-              <select id="lf-stage" class="select">${STAGES.map((s) => `<option value="${s.key}" ${s.key === l.stage ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</select>
-            </div>
-            <div class="field"><label for="lf-deal">Deal value (${esc(Store.getSettings().currency)})</label><input id="lf-deal" class="input" type="number" min="0" step="0.01" value="${l.dealValue || ''}" placeholder="0"></div>
-            <div class="field"><label for="lf-paid">Amount paid</label><input id="lf-paid" class="input" type="number" min="0" step="0.01" value="${l.amountPaid || ''}" placeholder="0"></div>
-            <div class="field"><label for="lf-fu">Follow-ups sent</label><input id="lf-fu" class="input" type="number" min="0" step="1" value="${l.followUps || ''}" placeholder="0"></div>
-            <div class="field"><label for="lf-last">Last contact</label><input id="lf-last" class="input" type="date" value="${esc(l.lastContactAt || '')}"></div>
-            <div class="field"><label for="lf-next">Next follow-up</label><input id="lf-next" class="input" type="date" value="${esc(l.nextFollowUpAt || '')}"></div>
-            <div class="field span-all"><label for="lf-notes">Notes</label><textarea id="lf-notes" class="input" maxlength="1000" placeholder="Context, objections, what they need…">${esc(l.notes || '')}</textarea></div>
-            <div class="form-error span-all" hidden></div>
-            <div class="form-actions span-all">
-              <button type="button" class="btn" data-act="cancel">Cancel</button>
-              <button type="submit" class="btn btn-primary">${lead ? 'Save lead' : 'Add lead'}</button>
-            </div>
-          </form>`
-      });
-      m.root.querySelector('.modal').style.width = 'min(720px, 100%)';
-      const r = m.root;
-      $('[data-act="cancel"]', r).onclick = m.close;
-      $('form', r).addEventListener('submit', (e) => {
-        e.preventDefault();
-        try {
-          Store.saveLead({
-            id: lead ? lead.id : undefined,
-            name: $('#lf-name', r).value,
-            business: $('#lf-business', r).value,
-            handle: $('#lf-handle', r).value,
-            email: $('#lf-email', r).value,
-            phone: $('#lf-phone', r).value,
-            niche: $('#lf-niche', r).value,
-            source: $('#lf-source', r).value,
-            ownerId: isAdmin ? $('#lf-owner', r).value || null : me.id,
-            stage: $('#lf-stage', r).value,
-            dealValue: $('#lf-deal', r).value,
-            amountPaid: $('#lf-paid', r).value,
-            followUps: $('#lf-fu', r).value,
-            lastContactAt: $('#lf-last', r).value,
-            nextFollowUpAt: $('#lf-next', r).value,
-            notes: $('#lf-notes', r).value
-          });
-          m.close();
-          Utils.toast(lead ? 'Lead saved.' : 'Lead added.');
-        } catch (x) {
-          const err = $('.form-error', r);
-          err.textContent = x.message;
-          err.hidden = false;
-        }
-      });
-    }
+    const openLeadModal = (lead) => openLeadForm(lead, { me, isAdmin });
 
     function followUpModal(lead) {
       const suggested = Utils.toISO(Utils.addDays(Utils.today(), 3));
@@ -451,6 +514,8 @@ const Leads = (() => {
       email: ['email', 'email address', 'e-mail', 'mail'],
       phone: ['phone', 'phone number', 'mobile', 'whatsapp', 'number'],
       source: ['source', 'platform', 'channel', 'lead source'],
+      origin: ['lead type', 'type', 'origin', 'inbound/outbound', 'inbound or outbound', 'traffic', 'traffic type'],
+      content: ['content', 'post', 'ad', 'campaign', 'creative', 'content piece', 'ad name', 'post title'],
       niche: ['niche', 'industry', 'category', 'vertical'],
       owner: ['owner', 'rep', 'assigned to', 'assigned', 'setter', 'sdr', 'team member', 'sales rep'],
       stage: ['stage', 'status', 'lead status', 'pipeline stage'],
@@ -511,7 +576,18 @@ const Leads = (() => {
         return u ? u.id : null;
       };
       const dataRows = rows.slice(1);
-      const FIELD_LABELS = { name: 'Name', business: 'Business', handle: 'Handle / link', email: 'Email', phone: 'Phone', source: 'Source', niche: 'Niche', owner: 'Owner', stage: 'Stage', dealValue: 'Deal value', amountPaid: 'Amount paid', followUps: 'Follow-ups', lastContactAt: 'Last contact', nextFollowUpAt: 'Next follow-up', notes: 'Notes' };
+      const contents = Store.getContents();
+      const findContent = (v) => {
+        const n = norm(v);
+        return n ? contents.find((c) => norm(c.title) === n) || null : null;
+      };
+      const toOrigin = (v) => {
+        const n = norm(v);
+        if (/\bpaid\b|\bads?\b|sponsored|\bppc\b/.test(n)) return 'paid';
+        if (/organic|content|inbound/.test(n)) return 'organic';
+        return 'outbound';
+      };
+      const FIELD_LABELS = { name: 'Name', business: 'Business', handle: 'Handle / link', email: 'Email', phone: 'Phone', origin: 'Lead type', content: 'Content / ad', source: 'Platform', niche: 'Niche', owner: 'Owner', stage: 'Stage', dealValue: 'Deal value', amountPaid: 'Amount paid', followUps: 'Follow-ups', lastContactAt: 'Last contact', nextFollowUpAt: 'Next follow-up', notes: 'Notes' };
 
       const m = Utils.modal({
         title: 'Import leads from CSV',
@@ -539,6 +615,8 @@ const Leads = (() => {
           email: get(r, 'email'),
           phone: get(r, 'phone'),
           source: get(r, 'source'),
+          origin: toOrigin(get(r, 'origin')),
+          contentId: (findContent(get(r, 'content')) || {}).id || null,
           niche: get(r, 'niche'),
           ownerId: isAdmin ? findOwner(get(r, 'owner')) || fallbackOwner : me.id,
           stage: toStage(get(r, 'stage')),
@@ -556,10 +634,10 @@ const Leads = (() => {
     }
 
     function exportCSV(list) {
-      const header = ['Name', 'Business', 'Handle', 'Email', 'Phone', 'Source', 'Niche', 'Owner', 'Stage', 'Deal value', 'Amount paid', 'Follow-ups', 'Last contact', 'Next follow-up', 'Notes', 'Added'];
+      const header = ['Name', 'Business', 'Handle', 'Email', 'Phone', 'Lead type', 'Content', 'Platform', 'Niche', 'Owner', 'Stage', 'Deal value', 'Amount paid', 'Follow-ups', 'Last contact', 'Next follow-up', 'Notes', 'Added'];
       const rows = list.map((l) => {
         const o = Store.getUser(l.ownerId);
-        return [l.name, l.business, l.handle, l.email, l.phone, l.source, l.niche, o ? o.email : '', stageLabel(l.stage), l.dealValue, l.amountPaid, l.followUps, l.lastContactAt, l.nextFollowUpAt, l.notes, (l.createdAt || '').slice(0, 10)];
+        return [l.name, l.business, l.handle, l.email, l.phone, ORIGIN_SHORT[originOf(l)], (Store.getContent(l.contentId) || {}).title || '', l.source, l.niche, o ? o.email : '', stageLabel(l.stage), l.dealValue, l.amountPaid, l.followUps, l.lastContactAt, l.nextFollowUpAt, l.notes, (l.createdAt || '').slice(0, 10)];
       });
       Utils.download(`leads_${todayISO()}.csv`, Utils.toCSV([header, ...rows]), 'text/csv');
     }
@@ -567,5 +645,5 @@ const Leads = (() => {
     return { render };
   }
 
-  return { mount, summarize, reached, followUpState, stagePill, STAGE_COLOR };
+  return { mount, summarize, reached, followUpState, stagePill, STAGE_COLOR, openLeadForm, originPill, originOf, ORIGIN_SLOT, ORIGIN_SHORT };
 })();

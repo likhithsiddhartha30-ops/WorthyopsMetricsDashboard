@@ -455,6 +455,68 @@ select.stage-select {
 .lead-card .avatar { width: 22px; height: 22px; font-size: 9.5px; }
 .board-empty { font-size: 12px; color: var(--text-muted); text-align: center; padding: 18px 8px; border: 1px dashed var(--border-strong); border-radius: var(--radius); }
 
+/* ---------- Content ---------- */
+.channel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.channel-note { grid-column: 1 / -1; margin-top: -8px; }
+.channel-card { overflow: hidden; }
+.channel-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--ch);
+}
+.channel-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 60% at 100% 0%, color-mix(in srgb, var(--ch) 10%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.channel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.mini-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; position: relative; z-index: 1; }
+.mini {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+.mini .l { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+.mini .v { font-size: 19px; font-weight: 650; letter-spacing: -0.02em; margin-top: 3px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini .s { font-size: 11px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.top-list { display: grid; gap: 4px; }
+.top-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.top-item:hover { background: var(--surface-2); }
+.top-item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+.top-main { display: grid; gap: 5px; min-width: 0; }
+.top-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-meta { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-muted); flex-wrap: wrap; }
+.top-meta .stage-pill { padding: 1px 8px 1px 6px; font-size: 11px; }
+.top-bar { height: 4px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.top-bar i { display: block; height: 100%; border-radius: 999px; }
+.top-val { font-weight: 650; font-variant-numeric: tabular-nums; }
+
+#ct-table th, #ct-table td { padding-left: 10px; padding-right: 10px; }
+.table tr.clickable { cursor: pointer; }
+.table tr.clickable:focus-visible { outline: none; background: var(--accent-soft); }
+.detail-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 18px; }
+.detail-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+
 /* Import preview */
 .import-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px 16px; font-size: 12.5px; }
 .import-map div { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
@@ -468,7 +530,8 @@ select.stage-select {
 }
 @media (max-width: 1100px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .grid-2, .grid-3-1, .hero { grid-template-columns: minmax(0, 1fr); }
+  .grid-2, .grid-3-1, .hero, .channel-grid { grid-template-columns: minmax(0, 1fr); }
+  .detail-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
@@ -501,6 +564,7 @@ select.stage-select {
   .rate-grid, .stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rate, .rate:nth-child(4), .stat-strip > div, .stat-strip > div:nth-child(4) { border-left: 0; padding-left: 0; }
   .funnel-row { grid-template-columns: 78px minmax(0, 1fr) 52px; gap: 8px; }
+  .mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chart-box { height: 240px; }
   .toolbar .search { max-width: none; }
 }

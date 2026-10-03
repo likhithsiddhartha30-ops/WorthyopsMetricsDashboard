@@ -41,7 +41,18 @@ window.APP_CONFIG = {
     { key: 'paid', label: 'Paid' },
     { key: 'lost', label: 'Lost' }
   ],
-  leadSources: ['Instagram', 'LinkedIn', 'Cold email', 'Cold call', 'Facebook', 'Twitter / X', 'Referral', 'Website', 'Other'],
+  leadSources: ['Instagram', 'LinkedIn', 'Cold email', 'Cold call', 'Facebook', 'Twitter / X', 'YouTube', 'Referral', 'Website', 'Other'],
+
+  // Where a lead came from. Outbound = setters reached out first.
+  // Inbound leads come from organic content or paid ads, and can be linked
+  // to the exact piece of content (Content section).
+  leadOrigins: [
+    { key: 'outbound', label: 'Outbound' },
+    { key: 'organic', label: 'Inbound · Organic content' },
+    { key: 'paid', label: 'Inbound · Paid ads' }
+  ],
+  contentPlatforms: ['Instagram', 'YouTube', 'LinkedIn', 'Facebook', 'TikTok', 'Twitter / X', 'Website / Blog', 'Newsletter', 'Other'],
+  contentFormats: ['Reel', 'Carousel', 'Post', 'Story', 'Long-form video', 'Short', 'Live / Webinar', 'Ad - Video', 'Ad - Image', 'Ad - Carousel', 'Lead form', 'Other'],
 
   // Defaults the admin can change later from Settings
   defaultSettings: {

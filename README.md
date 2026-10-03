@@ -18,7 +18,7 @@ Default logins are in `js/config.js`. **Change the admin password in Settings af
 |---|---|
 | `index.html` | Portal: pick Admin or Team login |
 | `admin-login.html` / `team-login.html` | The two login pages |
-| `admin.html` | Admin: Overview, Team performance, Leads, Activity log, Team members, Settings |
+| `admin.html` | Admin: Overview, Team performance, Leads, Content, Activity log, Team members, Settings |
 | `team.html` | Team member: My dashboard, Log activity, My leads, My entries, Account |
 
 ## Leads (client list)
@@ -30,6 +30,15 @@ Every prospect, with name, business, handle/link, email, phone, source, niche, o
 - **Follow-ups:** due and overdue follow-ups are flagged in the sidebar and on the dashboard.
 - **Import:** a CSV exported from Google Sheets (File → Download → CSV). Common column names such as "Client Name", "Instagram", "Status", "Assigned To" and "Date Contacted" are matched automatically.
 - **Who sees what:** admins see every lead. Team members see only their own.
+- **Lead type:** every lead is Outbound, Inbound · Organic content, or Inbound · Paid ads. Inbound leads can be linked to the post or ad that brought them in.
+
+## Content (admin)
+
+Tracks inbound results from **organic content** and **paid ads** separately.
+
+- **Side-by-side comparison:** leads, meetings booked, show-ups, deals closed, revenue and cash collected for each channel. Organic also shows views and leads per 1,000 views. Paid also shows ad spend, cost per lead, cost per meeting and ROAS.
+- **Charts:** inbound leads over time, revenue by source (outbound / organic / paid), and an organic-vs-paid funnel.
+- **Content library:** every post or ad with its all-time results. Click one to see every lead it generated, and add new leads straight from it.
 
 ## What it tracks
 
@@ -51,6 +60,7 @@ js/metrics.js       totals, conversion rates, time buckets, per-member stats
 js/charts.js        Chart.js wrappers
 js/dashboard.js     shared UI pieces (KPIs, hero, funnel, targets, entry form, tables)
 js/leads.js         lead list: table, pipeline board, lead form, CSV import/export
+js/content.js       content section: organic vs paid, content library, per-post drill-down
 js/admin.js         admin page logic
 js/team.js          team page logic
 js/login.js         login page logic
