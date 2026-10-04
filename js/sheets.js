@@ -252,6 +252,7 @@ const Sheets = (() => {
 
   /** Queue a change (called by the Store remote hook). */
   function enqueue(kind, action, record) {
+    if (!TO_ROW[kind]) return; // users / settings aren't stored in the sheet
     const row = TO_ROW[kind](record);
     queue.push({ kind, action, record: row });
     clearTimeout(flushTimer);
@@ -281,6 +282,7 @@ const Sheets = (() => {
 
   /** Start syncing on this page (no-op if not configured). */
   async function start() {
+    if (typeof Supa !== 'undefined' && Supa.enabled()) { setStatus({ state: 'off' }); return false; } // Supabase replaces the sheet
     if (!isConfigured()) { setStatus({ state: 'off' }); return false; }
     Store.setRemote(enqueue);
     const ok = await pull();

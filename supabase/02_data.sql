@@ -11,9 +11,13 @@
 --                  Never put the service_role key in browser code.
 -- =============================================================================
 
--- ---------- Time zone: "today" (stage dates, follow-ups) uses India time ----------
--- Takes effect for new connections. Change if your team is elsewhere.
-alter database postgres set timezone to 'Asia/Kolkata';
+-- ---------- Time zone ----------
+-- "Today" for stage dates / defaults uses India time via worthyops_today(),
+-- without changing the database-wide time zone (other apps share this DB).
+create or replace function public.worthyops_today()
+returns date
+language sql stable
+as $$ select (now() at time zone 'Asia/Kolkata')::date $$;
 
 -- ---------- Types (keys match the dashboard) ----------
 create type public.lead_stage   as enum ('new', 'contacted', 'replied', 'booked', 'attended', 'won', 'paid', 'lost');
@@ -29,7 +33,7 @@ as $$
   select exists (select 1 from public.profiles where id = auth.uid() and active);
 $$;
 
-create or replace function public.set_updated_at()
+create or replace function public.worthyops_set_updated_at()
 returns trigger
 language plpgsql
 as $$
@@ -61,7 +65,7 @@ create table public.content (
   platform      text not null default '',
   format        text not null default '',
   url           text not null default '' check (url = '' or url ~* '^https?://'),
-  published_at  date not null default current_date,
+  published_at  date not null default public.worthyops_today(),
   views         integer not null default 0 check (views >= 0),
   ad_spend      numeric(12, 2) not null default 0 check (ad_spend >= 0),
   notes         text not null default '',
@@ -75,7 +79,7 @@ create index content_published_idx on public.content (published_at);
 
 create trigger content_updated_at
   before update on public.content
-  for each row execute function public.set_updated_at();
+  for each row execute function public.worthyops_set_updated_at();
 
 -- =============================================================================
 -- Leads (the client / prospect list)
@@ -129,11 +133,11 @@ begin
   end if;
 
   if not (new.stage_dates ? new.stage::text) then
-    new.stage_dates := new.stage_dates || jsonb_build_object(new.stage::text, current_date);
+    new.stage_dates := new.stage_dates || jsonb_build_object(new.stage::text, public.worthyops_today());
   end if;
 
   if new.stage <> 'new' and new.last_contact_at is null then
-    new.last_contact_at := current_date;
+    new.last_contact_at := public.worthyops_today();
   end if;
 
   if tg_op = 'UPDATE' then
@@ -191,7 +195,7 @@ create index daily_activity_date_idx on public.daily_activity (date);
 
 create trigger daily_activity_updated_at
   before update on public.daily_activity
-  for each row execute function public.set_updated_at();
+  for each row execute function public.worthyops_set_updated_at();
 
 -- =============================================================================
 -- Settings (single row) - currency, team targets, leaderboard visibility
@@ -212,7 +216,7 @@ insert into public.settings (id) values (1);
 
 create trigger settings_updated_at
   before update on public.settings
-  for each row execute function public.set_updated_at();
+  for each row execute function public.worthyops_set_updated_at();
 
 -- =============================================================================
 -- Row-level security

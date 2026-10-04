@@ -30,7 +30,17 @@ window.APP_CONFIG = {
     { name: 'Sneha Reddy', email: 'sneha@worthyops.com' }
   ],
 
-  // Google Sheet sync (Apps Script web app). Leave empty to keep data in the
+  // Supabase (database + logins). When url + anonKey are set, Supabase is the
+  // single source of truth: logins use Supabase Auth and all data is stored
+  // there. Put the real values in js/config.local.js (git-ignored).
+  // The anon key is safe in the browser - row-level security protects the data.
+  // NEVER put the service_role key here.
+  supabase: {
+    url: '',
+    anonKey: ''
+  },
+
+  // Google Sheet sync (Apps Script web app). Ignored when Supabase is set. Leave empty to keep data in the
   // browser only. Can also be set per-browser in Admin → Settings.
   // Anyone with the URL + key can read and write the sheet - keep them private.
   sheetSync: {

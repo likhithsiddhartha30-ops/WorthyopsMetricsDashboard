@@ -105,7 +105,12 @@
 
     const showBoard = Store.getSettings().showLeaderboardToTeam;
     $('#leaderboard-card').hidden = !showBoard;
-    if (showBoard) {
+    if (showBoard && Store.supaOn()) {
+      // Members can only read their own activity rows, so the database totals it up
+      Supa.leaderboard(s.range.from, s.range.to)
+        .then((rows) => Dashboard.renderLeaderboard($('#leaderboard'), rows, { compact: true, highlightId: me.id }))
+        .catch(() => { $('#leaderboard').innerHTML = '<tr><td class="empty" colspan="5">Leaderboard unavailable.</td></tr>'; });
+    } else if (showBoard) {
       const all = Metrics.filter(Store.getEntries(), { from: s.range.from, to: s.range.to });
       const rows = Metrics.byMember(all, Store.getMembers().filter((m) => m.active));
       Dashboard.renderLeaderboard($('#leaderboard'), rows, { compact: true, highlightId: me.id });
@@ -177,7 +182,7 @@
     err.hidden = true;
     try {
       const u = Store.getUser(me.id);
-      if (!(await Auth.verifyPassword($('#pw-current').value, u.passwordHash))) throw new Error('Current password is incorrect.');
+      if (!(await Auth.checkPassword(u, $('#pw-current').value))) throw new Error('Current password is incorrect.');
       if ($('#pw-new').value !== $('#pw-confirm').value) throw new Error('New passwords do not match.');
       await Store.setPassword(u.id, $('#pw-new').value);
       e.target.reset();
@@ -189,8 +194,8 @@
   });
 
   // Re-render on data changes, except while typing in the log form
-  Sheets.mountStatus($('#sync-chip'));
-  Sheets.start();
+  if (Store.supaOn()) Supa.mountStatus($('#sync-chip'));
+  else { Sheets.mountStatus($('#sync-chip')); Sheets.start(); }
   Store.subscribe(() => { if (state.view !== 'log' || !document.activeElement.closest('#log-form')) render(); });
   document.addEventListener('themechange', render);
   Dashboard.router(Object.keys(VIEWS), (id) => { state.view = id; if (id !== 'log') editingEntry = null; render(); });

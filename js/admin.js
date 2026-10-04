@@ -296,7 +296,7 @@
         } else {
           const u = await Store.addUser({ name, email, password: $('#m-pw', r).value, role: 'member' });
           if (Object.keys(targets).length) Store.updateUser(u.id, { targets });
-          Utils.toast(`${u.name} added. They can now sign in on the Team login.`);
+          Utils.toast(u.needsConfirmation ? `${u.name} added. They must confirm the email Supabase sent before signing in.` : `${u.name} added. They can now sign in on the Team login.`);
         }
         m.close();
       } catch (x) {
@@ -309,14 +309,14 @@
   function resetPasswordModal(user) {
     const m = Utils.modal({
       title: `Reset password for ${user.name}`,
-      subtitle: 'Set a new temporary password and share it with them privately.',
+      subtitle: Store.supaOn() ? `Supabase will email ${user.email} a secure link to choose a new password.` : 'Set a new temporary password and share it with them privately.',
       body: `
         <form novalidate style="display:grid; gap:14px">
-          <div class="field"><label for="rp-pw">New password</label><input id="rp-pw" class="input" type="text" autocomplete="off" placeholder="At least 8 characters"></div>
+          <div class="field" ${Store.supaOn() ? 'hidden' : ''}><label for="rp-pw">New password</label><input id="rp-pw" class="input" type="text" autocomplete="off" placeholder="At least 8 characters"></div>
           <div class="form-error" hidden></div>
           <div class="form-actions">
             <button type="button" class="btn" data-act="cancel">Cancel</button>
-            <button type="submit" class="btn btn-primary">Reset password</button>
+            <button type="submit" class="btn btn-primary">${Store.supaOn() ? 'Send reset email' : 'Reset password'}</button>
           </div>
         </form>`
     });
@@ -325,8 +325,8 @@
     $('form', r).addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        await Store.setPassword(user.id, $('#rp-pw', r).value);
-        Utils.toast('Password reset.');
+        const res = await Store.setPassword(user.id, $('#rp-pw', r).value);
+        Utils.toast(res && res.emailed ? `Password reset link emailed to ${user.email}.` : 'Password reset.');
         m.close();
       } catch (x) {
         $('.form-error', r).textContent = x.message;
@@ -379,12 +379,18 @@
       if (!name) throw new Error('Name is required.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
       if (newPw || email.toLowerCase() !== u.email) {
-        if (!(await Auth.verifyPassword($('#a-current').value, u.passwordHash))) {
+        if (!(await Auth.checkPassword(u, $('#a-current').value))) {
           throw new Error('Enter your current password to change your email or password.');
         }
       }
       if (newPw) await Store.setPassword(u.id, newPw);
-      Store.updateUser(u.id, { name, email });
+      if (Store.supaOn() && email.toLowerCase() !== u.email) {
+        await Supa.changeOwnEmail(email);
+        Store.updateUser(u.id, { name });
+        Utils.toast('Check your new inbox to confirm the email change.');
+      } else {
+        Store.updateUser(u.id, { name, email });
+      }
       $('#a-current').value = '';
       $('#a-new').value = '';
       Dashboard.fillUserChip(Store.getUser(me.id));
@@ -467,6 +473,8 @@
     err.textContent = st.error || '';
   }
   Sheets.onStatus(paintSheetState);
+  // Supabase replaces the Google Sheet sync
+  if (Store.supaOn()) $('#gs-form').closest('.card').hidden = true;
   const gsCfg = Sheets.config();
   $('#gs-url').value = gsCfg.url;
   $('#gs-key').value = gsCfg.key;
@@ -503,8 +511,8 @@
   });
 
   // ---------- Boot ----------
-  Sheets.mountStatus($('#sync-chip'));
-  Sheets.start();
+  if (Store.supaOn()) Supa.mountStatus($('#sync-chip'));
+  else { Sheets.mountStatus($('#sync-chip')); Sheets.start(); }
   Store.subscribe(render);
   document.addEventListener('themechange', render);
   Dashboard.router(Object.keys(VIEWS), (id) => { state.view = id; render(); });

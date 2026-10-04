@@ -27,6 +27,8 @@ const Store = (() => {
   let remote = null;
   const emit = (kind, action, record) => { if (remote) remote(kind, action, record); };
   const setRemote = (fn) => { remote = fn; };
+  // Supabase mode: logins + all data live in Supabase (see js/supa.js)
+  const supaOn = () => typeof Supa !== 'undefined' && Supa.enabled();
   const remoteOn = () => !!remote;
 
   function emptyDb() {
@@ -64,6 +66,15 @@ const Store = (() => {
   /** Load data and create the default admin (+ demo data) on first run. */
   async function init() {
     load();
+    if (supaOn()) {
+      // No local accounts or demo data: everything is loaded from Supabase
+      // for the signed-in user (nothing is loaded when signed out).
+      await Supa.boot();
+      window.addEventListener('storage', (e) => {
+        if (e.key === KEY) { load(); listeners.forEach((fn) => fn()); }
+      });
+      return db;
+    }
     if (!db.users.some((u) => u.role === 'admin')) {
       const a = APP_CONFIG.defaultAdmin;
       db.users.push(makeUser({ name: a.name, email: a.email, role: 'admin', passwordHash: await Auth.hashPassword(a.password) }));
@@ -324,6 +335,13 @@ const Store = (() => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '')) throw new Error('Enter a valid email address.');
     if (getUserByEmail(email)) throw new Error('An account with this email already exists.');
     validatePassword(password);
+    if (supaOn()) {
+      const { user, needsConfirmation } = await Supa.createMember({ name: name.trim(), email: email.trim().toLowerCase(), password });
+      db.users.push(user);
+      save();
+      user.needsConfirmation = needsConfirmation;
+      return user;
+    }
     const user = makeUser({ name, email, role, passwordHash: await Auth.hashPassword(password) });
     db.users.push(user);
     save();
@@ -335,10 +353,12 @@ const Store = (() => {
     if (!u) throw new Error('User not found.');
     if (patch.email && patch.email.toLowerCase() !== u.email) {
       if (getUserByEmail(patch.email)) throw new Error('An account with this email already exists.');
+      if (supaOn()) throw new Error('To change a login email, update it in Supabase → Authentication → Users.');
       patch.email = patch.email.trim().toLowerCase();
     }
     Object.assign(u, patch);
     save();
+    emit('users', 'update', { id, patch });
     return u;
   }
 
@@ -346,9 +366,22 @@ const Store = (() => {
     if (!pw || pw.length < 8) throw new Error('Password must be at least 8 characters.');
   }
 
+  /** Returns { emailed: true } when Supabase sends a reset link instead. */
   async function setPassword(id, password) {
+    if (supaOn()) {
+      const u = getUser(id);
+      if (!u) throw new Error('User not found.');
+      if (id === (await Supa.currentUserId())) {
+        validatePassword(password);
+        await Supa.changeOwnPassword(password);
+        return { emailed: false };
+      }
+      await Supa.sendPasswordReset(u.email);
+      return { emailed: true };
+    }
     validatePassword(password);
     updateUser(id, { passwordHash: await Auth.hashPassword(password) });
+    return { emailed: false };
   }
 
   function deleteUser(id) {
@@ -362,6 +395,7 @@ const Store = (() => {
     // Keep their leads (client data) but mark them unassigned
     (db.leads || []).forEach((l) => { if (l.ownerId === id) l.ownerId = null; });
     save();
+    emit('users', 'delete', { id });
   }
 
   // ---------- Leads ----------
@@ -622,12 +656,14 @@ const Store = (() => {
     db.settings = Object.assign({}, db.settings, patch);
     if (patch.targets) db.settings.targets = Object.assign({}, db.settings.targets, patch.targets);
     save();
+    emit('settings', 'update', db.settings);
   }
 
   // ---------- Backup ----------
   const exportData = () => JSON.stringify(db, null, 2);
 
   function importData(json) {
+    if (supaOn()) throw new Error('Data lives in Supabase - restore it from Supabase backups instead.');
     const data = typeof json === 'string' ? JSON.parse(json) : json;
     if (!data || !Array.isArray(data.users) || !Array.isArray(data.entries)) {
       throw new Error('That file is not a valid dashboard backup.');
@@ -646,7 +682,9 @@ const Store = (() => {
   }
 
   /** Replace synced collections with data pulled from Google Sheets (no echo back). */
-  function applyRemote({ leads, contents, entries }) {
+  function applyRemote({ users, settings, leads, contents, entries }) {
+    if (Array.isArray(users)) db.users = users;
+    if (settings) db.settings = Object.assign({}, db.settings, settings, { targets: Object.assign({}, db.settings.targets, settings.targets) });
     if (Array.isArray(contents)) db.contents = contents;
     if (Array.isArray(leads)) db.leads = leads;
     if (Array.isArray(entries)) db.entries = entries;
@@ -661,7 +699,7 @@ const Store = (() => {
     getEntries, getEntry, findEntry, upsertEntry, deleteEntry, clearEntries,
     getLeads, getLead, saveLead, setLeadStage, logFollowUp, deleteLead, importLeads, clearLeads,
     getContents, getContent, saveContent, deleteContent,
-    setRemote, remoteOn, applyRemote, removeDemoData,
+    setRemote, remoteOn, applyRemote, removeDemoData, supaOn,
     getSettings, updateSettings, exportData, importData, resetAll
   };
 })();

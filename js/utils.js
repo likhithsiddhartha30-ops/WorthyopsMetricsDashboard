@@ -4,7 +4,9 @@
 
 const Utils = (() => {
   // ---------- IDs & misc ----------
+  /** Unique id. A real UUID when available (required by the Supabase tables). */
   function uid(prefix = 'id') {
+    if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
     return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
@@ -39,7 +41,7 @@ const Utils = (() => {
 
   // ---------- Formatting ----------
   function settings() {
-    return (window.Store && Store.getSettings()) || APP_CONFIG.defaultSettings;
+    return (typeof Store !== 'undefined' && Store.getSettings()) || APP_CONFIG.defaultSettings;
   }
 
   function num(n) {

@@ -66,6 +66,33 @@ js/team.js          team page logic
 js/login.js         login page logic
 ```
 
+## Supabase (database + logins)
+
+When `APP_CONFIG.supabase.url` and `anonKey` are set, Supabase is the single source of truth:
+
+- **Logins:** handled by Supabase Auth. Each user's role and active status come from the `profiles` table.
+- **Data:** stored in `leads`, `content`, `daily_activity` and `settings`. It loads on sign-in, refreshes every 30 seconds, and every change saves immediately.
+- **Google Sheet sync:** switched off.
+
+Setup:
+
+1. Run `supabase/01_auth.sql`, then `supabase/02_data.sql`, in the SQL Editor.
+2. Create your login under **Authentication → Users → Add user**. Then make it admin:
+   ```sql
+   update public.profiles set role = 'admin' where email = 'you@example.com';
+   ```
+3. Put the project URL and the **anon** key (Project Settings → API Keys) in `js/config.local.js`, which git ignores:
+   ```js
+   APP_CONFIG.supabase.url = 'https://<project>.supabase.co';
+   APP_CONFIG.supabase.anonKey = '<anon key>';
+   ```
+   Never use the `service_role` key in the dashboard. It belongs only on a server, for example your AI outreach tool.
+
+Things to know:
+
+- **Adding team members:** Admin → Team members → Add member creates their Supabase login. If "Confirm email" is on in Supabase Auth settings, they must confirm before signing in.
+- **Resetting passwords:** Supabase emails a reset link.
+
 ## Google Sheet sync
 
 Leads, Content and Daily Activity sync both ways with the WorthyOps Google Sheet:

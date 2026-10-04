@@ -87,7 +87,9 @@ const Auth = (() => {
       sessionStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(SESSION_KEY);
     } catch (e) { /* ignore */ }
-    if (redirect) window.location.href = role === 'admin' ? 'admin-login.html' : 'team-login.html';
+    const go = () => { if (redirect) window.location.href = role === 'admin' ? 'admin-login.html' : 'team-login.html'; };
+    if (typeof Store !== 'undefined' && Store.supaOn()) Supa.signOut().finally(go);
+    else go();
   }
 
   function getSessionRaw() {
@@ -101,6 +103,24 @@ const Auth = (() => {
    * Returns { ok, user?, error? }.
    */
   async function login(email, password, role, remember = false) {
+    if (Store.supaOn()) {
+      const res = await Supa.signIn(email, password);
+      if (!res.ok) return res;
+      const u = res.user;
+      const wrongPortal = u.role !== role;
+      if (wrongPortal || !u.active) {
+        await Supa.signOut();
+        if (!u.active) return { ok: false, error: 'This account has been deactivated. Contact your admin.' };
+        return {
+          ok: false,
+          error: role === 'admin'
+            ? 'This account is a team account. Use the Team login instead.'
+            : 'This is an admin account. Use the Admin login instead.'
+        };
+      }
+      setSession(u, remember);
+      return { ok: true, user: u };
+    }
     const user = Store.getUserByEmail(email);
     const generic = 'Incorrect email or password.';
     if (!user) return { ok: false, error: generic };
@@ -140,5 +160,19 @@ const Auth = (() => {
     }
   }
 
-  return { hashPassword, verifyPassword, login, logout, getSession, requireRole, redirectIfLoggedIn };
+  /** Check a user's current password (before changing email/password). */
+  async function checkPassword(user, password) {
+    if (Store.supaOn()) return Supa.checkPassword(user.email, password);
+    return verifyPassword(password, user.passwordHash);
+  }
+
+  /** Drop the local session (e.g. Supabase session expired). */
+  function clearSession() {
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
+    } catch (e) { /* ignore */ }
+  }
+
+  return { hashPassword, verifyPassword, checkPassword, clearSession, login, logout, getSession, requireRole, redirectIfLoggedIn };
 })();
