@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    App configuration
    Edit these values before you share the dashboard with your team.
    The default accounts below are only used the FIRST time the app loads
@@ -32,12 +32,13 @@ window.APP_CONFIG = {
 
   // Supabase (database + logins). When url + anonKey are set, Supabase is the
   // single source of truth: logins use Supabase Auth and all data is stored
-  // there. Put the real values in js/config.local.js (git-ignored).
+  // there. These are the PUBLIC project URL + anon key (needed by the live site).
   // The anon key is safe in the browser - row-level security protects the data.
   // NEVER put the service_role key here.
   supabase: {
-    url: '',
-    anonKey: ''
+    url: 'https://auvkjzxknkvjjtsrzget.supabase.co',
+    // Public anon key (safe in the browser; row-level security protects the data)
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1dmtqenhrbmt2amp0c3J6Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNTAyNTcsImV4cCI6MjEwNjYyNjI1N30.YfJnPzzXDnZKcISb_Hivxb4LoF3hokWEImstGmZJ39Q'
   },
 
   // Google Sheet sync (Apps Script web app). Ignored when Supabase is set. Leave empty to keep data in the
