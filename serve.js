@@ -21,7 +21,8 @@ http.createServer((req, res) => {
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end('Forbidden'); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
+    // no-store: browsers always load the latest code (no stale cached JS)
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(data);
   });
 }).listen(PORT, () => console.log(`WorthyOps dashboard running at http://localhost:${PORT}`));

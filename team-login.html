@@ -3,87 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Team Login · WorthyOps</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/login.css">
+  <title>Sign in · WorthyOps</title>
+  <!-- Old login link: everyone now signs in on one page (index.html) -->
+  <meta http-equiv="refresh" content="0; url=index.html">
+  <script>location.replace('index.html');</script>
 </head>
-<body data-role="member">
-  <button class="icon-btn auth-theme" data-theme-toggle type="button"></button>
-
-  <main class="auth-page">
-    <section class="auth-brand team">
-      <div class="logo"><span class="logo-mark">W</span> WorthyOps</div>
-
-      <div>
-        <span class="eyebrow"><i></i> Team workspace</span>
-        <h1>Log your numbers. <span>Watch them compound.</span></h1>
-        <p class="lead">Track your outreach, leads, calls and closes - and see exactly where your pipeline stands every day.</p>
-
-        <div class="preview" aria-hidden="true" style="margin-top:32px">
-          <div class="preview-row">
-            <div class="preview-tile"><div class="l">Today</div><div class="bar"><i style="width:64%"></i></div></div>
-            <div class="preview-tile"><div class="l">This week</div><div class="bar"><i style="width:82%"></i></div></div>
-            <div class="preview-tile"><div class="l">Target</div><div class="bar"><i style="width:48%"></i></div></div>
-          </div>
-          <svg viewBox="0 0 400 90" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="pv-t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d399" stop-opacity="0.4"/><stop offset="1" stop-color="#34d399" stop-opacity="0"/></linearGradient>
-            </defs>
-            <path d="M0 74 C50 70 70 58 110 60 S170 44 210 40 S270 30 310 22 S370 14 400 12 L400 90 L0 90Z" fill="url(#pv-t)"/>
-            <path d="M0 74 C50 70 70 58 110 60 S170 44 210 40 S270 30 310 22 S370 14 400 12" fill="none" stroke="#6ee7b7" stroke-width="2"/>
-          </svg>
-        </div>
-
-        <div class="features">
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Log a day in 60 seconds</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Your lead pipeline</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Follow-up reminders</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Targets &amp; leaderboard</div>
-        </div>
-      </div>
-
-      <p class="foot">© WorthyOps · Team member access</p>
-    </section>
-
-    <section class="auth-panel">
-      <div class="auth-card">
-        <span class="badge badge-good role-pill">Team portal</span>
-        <h2>Sign in</h2>
-        <p class="lead">Use the email and password your admin gave you.</p>
-
-        <form id="login-form" class="auth-form" novalidate>
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" class="input" type="email" autocomplete="username" placeholder="you@company.com" required>
-          </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <div class="password-wrap">
-              <input id="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••" required>
-              <button id="toggle-password" type="button" aria-pressed="false">Show</button>
-            </div>
-          </div>
-          <label class="check"><input id="remember" type="checkbox"> Keep me signed in on this device</label>
-          <div id="login-error" class="form-error" role="alert" hidden></div>
-          <button id="login-submit" class="btn btn-primary btn-block" type="submit">Sign in</button>
-        </form>
-
-        <div class="auth-divider">or</div>
-        <p class="auth-switch">Forgot your password? Ask your admin to reset it.<br>Admin? <a href="admin-login.html">Go to admin login →</a></p>
-      </div>
-    </section>
-  </main>
-
-  <script src="js/config.js"></script>
-  <script src="js/config.local.js" onerror="void 0"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="js/supa.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/login.js"></script>
+<body>
+  <p><a href="index.html">Continue to sign in</a></p>
 </body>
 </html>

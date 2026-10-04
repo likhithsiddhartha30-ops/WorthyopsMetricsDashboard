@@ -193,7 +193,7 @@ const Supa = (() => {
   }
 
   async function sendPasswordReset(email) {
-    const { error } = await db().auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname.replace(/[^/]*$/, 'team-login.html') });
+    const { error } = await db().auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname.replace(/[^/]*$/, 'index.html') });
     if (error) throw new Error(error.message);
   }
 

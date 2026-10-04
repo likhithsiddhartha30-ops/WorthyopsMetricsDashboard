@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WorthyOps Metrics</title>
+  <title>Sign in · WorthyOps</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap">
@@ -13,35 +13,91 @@
 <body>
   <button class="icon-btn auth-theme" data-theme-toggle type="button"></button>
 
-  <main class="portal">
-    <div class="portal-inner">
+  <main class="auth-page">
+    <section class="auth-brand">
       <div class="logo"><span class="logo-mark">W</span> WorthyOps</div>
-      <h1>Outreach &amp; sales,<br><span>measured.</span></h1>
-      <p class="lead">Every lead, message, reply, call, close and dollar - in one place.</p>
 
-      <div class="portal-grid">
-        <a class="portal-card" href="admin-login.html">
-          <div class="icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+      <div>
+        <span class="eyebrow"><i></i> Outreach &amp; sales metrics</span>
+        <h1>Your whole sales engine, <span>in one view.</span></h1>
+        <p class="lead">Outreach, leads, replies, calls, conversions, content and revenue - live, ranked and measured against target.</p>
+
+        <div class="preview" aria-hidden="true" style="margin-top:32px">
+          <div class="preview-row">
+            <div class="preview-tile"><div class="l">Outreach</div><div class="bar"><i style="width:78%"></i></div></div>
+            <div class="preview-tile"><div class="l">Calls booked</div><div class="bar"><i style="width:56%"></i></div></div>
+            <div class="preview-tile"><div class="l">Revenue</div><div class="bar"><i style="width:66%"></i></div></div>
           </div>
-          <h2>Admin</h2>
-          <p>Team-wide analytics, lead pipeline, leaderboard, targets and member management.</p>
-          <div class="go">Admin login →</div>
-        </a>
-        <a class="portal-card team" href="team-login.html">
-          <div class="icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7"/><path d="M16 4a4 4 0 0 1 0 8M22 21c0-3-2-5.5-5-6.5"/></svg>
-          </div>
-          <h2>Team member</h2>
-          <p>Log daily activity, manage your leads and track your personal targets.</p>
-          <div class="go">Team login →</div>
-        </a>
+          <svg viewBox="0 0 400 90" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="pv-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a78bfa" stop-opacity="0.45"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></linearGradient>
+            </defs>
+            <path d="M0 70 C40 64 60 50 100 54 S160 30 200 36 S260 20 300 24 S360 8 400 10 L400 90 L0 90Z" fill="url(#pv-a)"/>
+            <path d="M0 70 C40 64 60 50 100 54 S160 30 200 36 S260 20 300 24 S360 8 400 10" fill="none" stroke="#c4b5fd" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="features">
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Lead pipeline</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Organic vs paid content</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Revenue &amp; collections</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Targets &amp; leaderboard</div>
+        </div>
       </div>
-    </div>
+
+      <p class="foot">© WorthyOps</p>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <h2>Welcome back</h2>
+        <p class="lead">Sign in to your WorthyOps account.</p>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" class="input" type="email" autocomplete="username" placeholder="you@company.com" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input id="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••" required>
+              <button id="toggle-password" type="button" aria-pressed="false">Show</button>
+            </div>
+          </div>
+          <div class="row" style="justify-content:space-between">
+            <label class="check"><input id="remember" type="checkbox"> Keep me signed in</label>
+            <button type="button" class="link-btn" id="forgot">Forgot password?</button>
+          </div>
+          <div id="login-error" class="form-error" role="alert" hidden></div>
+          <div id="login-info" class="form-info" role="status" hidden></div>
+          <button id="login-submit" class="btn btn-primary btn-block" type="submit">Sign in</button>
+        </form>
+
+        <!-- Shown when arriving from a password-reset email -->
+        <form id="reset-form" class="auth-form" novalidate hidden>
+          <div class="field">
+            <label for="new-password">New password</label>
+            <input id="new-password" class="input" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+          </div>
+          <div class="field">
+            <label for="confirm-password">Confirm new password</label>
+            <input id="confirm-password" class="input" type="password" autocomplete="new-password">
+          </div>
+          <div id="reset-error" class="form-error" role="alert" hidden></div>
+          <button id="reset-submit" class="btn btn-primary btn-block" type="submit">Set new password</button>
+        </form>
+      </div>
+    </section>
   </main>
 
   <script src="js/config.js"></script>
+  <script src="js/config.local.js" onerror="void 0"></script>
   <script src="js/utils.js"></script>
-  <script>Utils.bindThemeToggles();</script>
+  <script src="js/auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/supa.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/login.js"></script>
 </body>
 </html>

@@ -3,87 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login · WorthyOps</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/login.css">
+  <title>Sign in · WorthyOps</title>
+  <!-- Old login link: everyone now signs in on one page (index.html) -->
+  <meta http-equiv="refresh" content="0; url=index.html">
+  <script>location.replace('index.html');</script>
 </head>
-<body data-role="admin">
-  <button class="icon-btn auth-theme" data-theme-toggle type="button"></button>
-
-  <main class="auth-page">
-    <section class="auth-brand">
-      <div class="logo"><span class="logo-mark">W</span> WorthyOps</div>
-
-      <div>
-        <span class="eyebrow"><i></i> Admin console</span>
-        <h1>Your whole sales engine, <span>in one view.</span></h1>
-        <p class="lead">Every rep's outreach, replies, calls, conversions and revenue - live, ranked and measured against target.</p>
-
-        <div class="preview" aria-hidden="true" style="margin-top:32px">
-          <div class="preview-row">
-            <div class="preview-tile"><div class="l">Outreach</div><div class="bar"><i style="width:78%"></i></div></div>
-            <div class="preview-tile"><div class="l">Calls booked</div><div class="bar"><i style="width:56%"></i></div></div>
-            <div class="preview-tile"><div class="l">Revenue</div><div class="bar"><i style="width:66%"></i></div></div>
-          </div>
-          <svg viewBox="0 0 400 90" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="pv-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a78bfa" stop-opacity="0.45"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></linearGradient>
-            </defs>
-            <path d="M0 70 C40 64 60 50 100 54 S160 30 200 36 S260 20 300 24 S360 8 400 10 L400 90 L0 90Z" fill="url(#pv-a)"/>
-            <path d="M0 70 C40 64 60 50 100 54 S160 30 200 36 S260 20 300 24 S360 8 400 10" fill="none" stroke="#c4b5fd" stroke-width="2"/>
-          </svg>
-        </div>
-
-        <div class="features">
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Team funnel &amp; rates</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Lead pipeline</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Revenue &amp; collections</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Leaderboard &amp; targets</div>
-        </div>
-      </div>
-
-      <p class="foot">© WorthyOps · Admin access only</p>
-    </section>
-
-    <section class="auth-panel">
-      <div class="auth-card">
-        <span class="badge badge-accent role-pill">Admin portal</span>
-        <h2>Welcome back</h2>
-        <p class="lead">Sign in to your admin account to continue.</p>
-
-        <form id="login-form" class="auth-form" novalidate>
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" class="input" type="email" autocomplete="username" placeholder="admin@company.com" required>
-          </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <div class="password-wrap">
-              <input id="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••" required>
-              <button id="toggle-password" type="button" aria-pressed="false">Show</button>
-            </div>
-          </div>
-          <label class="check"><input id="remember" type="checkbox"> Keep me signed in on this device</label>
-          <div id="login-error" class="form-error" role="alert" hidden></div>
-          <button id="login-submit" class="btn btn-primary btn-block" type="submit">Sign in</button>
-        </form>
-
-        <div class="auth-divider">or</div>
-        <p class="auth-switch">Not an admin? <a href="team-login.html">Go to team login →</a></p>
-      </div>
-    </section>
-  </main>
-
-  <script src="js/config.js"></script>
-  <script src="js/config.local.js" onerror="void 0"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="js/supa.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/login.js"></script>
+<body>
+  <p><a href="index.html">Continue to sign in</a></p>
 </body>
 </html>

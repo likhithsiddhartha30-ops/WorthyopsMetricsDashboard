@@ -16,8 +16,8 @@ Default logins are in `js/config.js`. **Change the admin password in Settings af
 
 | File | What it is |
 |---|---|
-| `index.html` | Portal: pick Admin or Team login |
-| `admin-login.html` / `team-login.html` | The two login pages |
+| `index.html` | Sign-in page for everyone (admins → admin.html, team → team.html) |
+| `admin-login.html` / `team-login.html` | Old links - redirect to `index.html` |
 | `admin.html` | Admin: Overview, Team performance, Leads, Content, Activity log, Team members, Settings |
 | `team.html` | Team member: My dashboard, Log activity, My leads, My entries, Account |
 

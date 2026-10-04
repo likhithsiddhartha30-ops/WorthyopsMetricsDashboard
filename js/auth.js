@@ -81,13 +81,16 @@ const Auth = (() => {
     } catch (e) { /* ignore */ }
   }
 
+  // One login page for everyone; each role has its own dashboard
+  const LOGIN_PAGE = 'index.html';
+  const homeFor = (role) => (role === 'admin' ? 'admin.html' : 'team.html');
+
   function logout(redirect = true) {
-    const role = (getSessionRaw() || {}).role;
     try {
       sessionStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(SESSION_KEY);
     } catch (e) { /* ignore */ }
-    const go = () => { if (redirect) window.location.href = role === 'admin' ? 'admin-login.html' : 'team-login.html'; };
+    const go = () => { if (redirect) window.location.href = LOGIN_PAGE; };
     if (typeof Store !== 'undefined' && Store.supaOn()) Supa.signOut().finally(go);
     else go();
   }
@@ -99,65 +102,51 @@ const Auth = (() => {
   }
 
   /**
-   * Attempt a login for the given portal role ('admin' | 'member').
-   * Returns { ok, user?, error? }.
+   * Sign in with email + password. The account's role decides where the
+   * person lands (admin → admin.html, member → team.html).
+   * Returns { ok, user?, home?, error? }.
    */
-  async function login(email, password, role, remember = false) {
+  async function login(email, password, remember = false) {
+    const inactive = 'This account has been deactivated. Contact your admin.';
     if (Store.supaOn()) {
       const res = await Supa.signIn(email, password);
       if (!res.ok) return res;
       const u = res.user;
-      const wrongPortal = u.role !== role;
-      if (wrongPortal || !u.active) {
+      if (!u.active) {
         await Supa.signOut();
-        if (!u.active) return { ok: false, error: 'This account has been deactivated. Contact your admin.' };
-        return {
-          ok: false,
-          error: role === 'admin'
-            ? 'This account is a team account. Use the Team login instead.'
-            : 'This is an admin account. Use the Admin login instead.'
-        };
+        return { ok: false, error: inactive };
       }
       setSession(u, remember);
-      return { ok: true, user: u };
+      return { ok: true, user: u, home: homeFor(u.role) };
     }
     const user = Store.getUserByEmail(email);
     const generic = 'Incorrect email or password.';
     if (!user) return { ok: false, error: generic };
     if (!(await verifyPassword(password, user.passwordHash))) return { ok: false, error: generic };
-    if (user.role !== role) {
-      return {
-        ok: false,
-        error: role === 'admin'
-          ? 'This account is a team account. Use the Team login instead.'
-          : 'This is an admin account. Use the Admin login instead.'
-      };
-    }
-    if (!user.active) return { ok: false, error: 'This account has been deactivated. Contact your admin.' };
+    if (!user.active) return { ok: false, error: inactive };
     setSession(user, remember);
     Store.updateUser(user.id, { lastLogin: new Date().toISOString() });
-    return { ok: true, user };
+    return { ok: true, user, home: homeFor(user.role) };
   }
 
   /**
-   * Guard a protected page. Redirects to the right login if there's no
-   * valid session for `role`. Returns the current user when allowed.
+   * Guard a dashboard page. Not signed in → login page. Signed in with a
+   * different role → that role's own dashboard. Returns the user when allowed.
    */
   function requireRole(role) {
     const s = getSession();
-    const loginPage = role === 'admin' ? 'admin-login.html' : 'team-login.html';
-    if (!s || s.role !== role) { window.location.replace(loginPage); return null; }
+    if (!s) { window.location.replace(LOGIN_PAGE); return null; }
     const user = Store.getUser(s.userId);
-    if (!user || !user.active || user.role !== role) { logout(false); window.location.replace(loginPage); return null; }
+    if (!user || !user.active) { logout(false); window.location.replace(LOGIN_PAGE); return null; }
+    if (user.role !== role) { window.location.replace(homeFor(user.role)); return null; }
     return user;
   }
 
-  /** If already logged in, skip the login page. */
-  function redirectIfLoggedIn(role) {
+  /** Already signed in? Skip the login page and go to your dashboard. */
+  function redirectIfLoggedIn() {
     const s = getSession();
-    if (s && s.role === role && Store.getUser(s.userId)) {
-      window.location.replace(role === 'admin' ? 'admin.html' : 'team.html');
-    }
+    const user = s && Store.getUser(s.userId);
+    if (user && user.active) window.location.replace(homeFor(user.role));
   }
 
   /** Check a user's current password (before changing email/password). */
@@ -174,5 +163,5 @@ const Auth = (() => {
     } catch (e) { /* ignore */ }
   }
 
-  return { hashPassword, verifyPassword, checkPassword, clearSession, login, logout, getSession, requireRole, redirectIfLoggedIn };
+  return { hashPassword, verifyPassword, checkPassword, clearSession, login, logout, getSession, requireRole, redirectIfLoggedIn, homeFor, LOGIN_PAGE };
 })();
