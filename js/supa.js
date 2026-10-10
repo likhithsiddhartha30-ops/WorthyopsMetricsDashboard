@@ -224,6 +224,49 @@ const Supa = (() => {
     return { user, needsConfirmation: !data.session };
   }
 
+  // ---------- Google Sheet import ----------
+  /** Sheet ids are short text ("1", "L-1a2b3c4d") but Supabase ids are UUIDs.
+   *  Derive a stable UUID from each sheet id, so re-running the import updates the same rows. */
+  async function uuidFor(key) {
+    const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))).slice(0, 16);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4 layout
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // RFC 4122 variant
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  /** Upsert dashboard-shaped rows read from the sheet. Admins only (RLS). */
+  async function importSheet({ contents, leads, entries }) {
+    const contentIds = new Map();
+    const contentRows = [];
+    for (const c of contents) {
+      const id = await uuidFor(`content:${c.id}`);
+      contentIds.set(c.id, id);
+      contentRows.push(contentToRow({ ...c, id }));
+    }
+    const leadRows = [];
+    for (const l of leads) {
+      leadRows.push(leadToRow({
+        ...l,
+        id: await uuidFor(`lead:${l.id}`),
+        contentId: l.contentId ? contentIds.get(l.contentId) || null : null
+      }));
+    }
+    const entryRows = entries.map(entryToRow);
+
+    const steps = [
+      ['content', contentRows, { onConflict: 'id' }],
+      ['leads', leadRows, { onConflict: 'id' }],
+      ['daily_activity', entryRows, { onConflict: 'user_id,date' }]
+    ];
+    for (const [table, rows, opts] of steps) {
+      if (!rows.length) continue;
+      const { error } = await db().from(table).upsert(rows, opts);
+      if (error) throw error;
+    }
+    return { content: contentRows.length, leads: leadRows.length, daily: entryRows.length };
+  }
+
   // ---------- Data ----------
   /** Load everything this user may see and hand it to the Store. */
   async function pull() {
@@ -346,6 +389,6 @@ const Supa = (() => {
   return {
     enabled, client: db, boot, pull, write, leaderboard,
     signIn, signOut, checkPassword, changeOwnPassword, changeOwnEmail, sendPasswordReset, createMember,
-    currentUserId, fetchProfile, onStatus, mountStatus, status: () => Object.assign({}, status)
+    currentUserId, fetchProfile, onStatus, mountStatus, importSheet, status: () => Object.assign({}, status)
   };
 })();

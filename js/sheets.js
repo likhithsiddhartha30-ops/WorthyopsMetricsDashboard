@@ -33,6 +33,12 @@ const Sheets = (() => {
     return { url: String(c.url || '').trim(), key: String(c.key || '').trim() };
   }
   const isConfigured = () => !!config().url;
+  const supaOn = () => typeof Supa !== 'undefined' && Supa.enabled();
+  async function isAdmin() {
+    const uid = await Supa.currentUserId();
+    const me = uid ? Store.getUser(uid) : null;
+    return !!me && me.role === 'admin';
+  }
 
   function saveConfig({ url, key }) {
     try { localStorage.setItem(LS_KEY, JSON.stringify({ url: url.trim(), key: key.trim() })); } catch (e) { /* ignore */ }
@@ -227,9 +233,29 @@ const Sheets = (() => {
     return data;
   }
 
+  /** Copy the sheet's rows into Supabase (used when Supabase is the data store). */
+  async function importToSupabase() {
+    setStatus({ state: 'syncing', error: '' });
+    try {
+      const { data } = await request('GET');
+      const contents = (data.content || []).map(rowToContent).filter((c) => c.id && c.title);
+      const byTitle = new Map(contents.map((c) => [c.title.toLowerCase(), c]));
+      const leads = (data.leads || []).map((r) => rowToLead(r, byTitle)).filter((l) => l.id && l.name);
+      // Daily rows whose Team Member doesn't match a dashboard login can't be stored, so skip them
+      const entries = (data.daily || []).map(rowToEntry).filter((e) => e.date && e.userId);
+      const counts = await Supa.importSheet({ contents, leads, entries });
+      setStatus({ state: 'ok', last: new Date(), error: '', counts });
+      return true;
+    } catch (e) {
+      setStatus({ state: 'error', error: e.message });
+      return false;
+    }
+  }
+
   /** Read everything from the sheet and replace the dashboard's synced data. */
   async function pull() {
     if (!isConfigured()) return false;
+    if (supaOn()) return importToSupabase();
     if (queue.length || flushing) return false; // don't overwrite unsent local edits
     setStatus({ state: 'syncing', error: '' });
     try {
@@ -282,8 +308,15 @@ const Sheets = (() => {
 
   /** Start syncing on this page (no-op if not configured). */
   async function start() {
-    if (typeof Supa !== 'undefined' && Supa.enabled()) { setStatus({ state: 'off' }); return false; } // Supabase replaces the sheet
     if (!isConfigured()) { setStatus({ state: 'off' }); return false; }
+    if (supaOn()) {
+      // Supabase holds the data; the sheet is copied into it. Only admins can write every table.
+      if (!(await isAdmin())) { setStatus({ state: 'off' }); return false; }
+      const ok = await pull();
+      clearInterval(pollTimer);
+      pollTimer = setInterval(pull, POLL_MS);
+      return ok;
+    }
     Store.setRemote(enqueue);
     const ok = await pull();
     clearInterval(pollTimer);
