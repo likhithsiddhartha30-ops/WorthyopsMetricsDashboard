@@ -473,8 +473,6 @@
     err.textContent = st.error || '';
   }
   Sheets.onStatus(paintSheetState);
-  // Supabase replaces the Google Sheet sync
-  if (Store.supaOn()) $('#gs-form').closest('.card').hidden = true;
   const gsCfg = Sheets.config();
   $('#gs-url').value = gsCfg.url;
   $('#gs-key').value = gsCfg.key;
@@ -492,7 +490,10 @@
     }
     try {
       const counts = await Sheets.test(url, key);
-      if (!(await Utils.confirmDialog(`Found ${counts.leads} leads, ${counts.content} content pieces and ${counts.daily} activity rows in the sheet. Connect? The dashboard's current leads, content and activity will be replaced by the sheet's data.`, { title: 'Connect Google Sheet?', confirmText: 'Connect' }))) return;
+      const effect = Store.supaOn()
+        ? 'Sheet rows will be copied into the dashboard every minute while an admin has it open; edits in the sheet win.'
+        : "The dashboard's current leads, content and activity will be replaced by the sheet's data.";
+      if (!(await Utils.confirmDialog(`Found ${counts.leads} leads, ${counts.content} content pieces and ${counts.daily} activity rows in the sheet. Connect? ${effect}`, { title: 'Connect Google Sheet?', confirmText: 'Connect' }))) return;
       Sheets.saveConfig({ url, key });
       await Sheets.start();
       Utils.toast('Google Sheet connected.');
@@ -512,7 +513,8 @@
 
   // ---------- Boot ----------
   if (Store.supaOn()) Supa.mountStatus($('#sync-chip'));
-  else { Sheets.mountStatus($('#sync-chip')); Sheets.start(); }
+  else Sheets.mountStatus($('#sync-chip'));
+  Sheets.start(); // with Supabase on, copies the sheet into Supabase (admins only)
   Store.subscribe(render);
   document.addEventListener('themechange', render);
   Dashboard.router(Object.keys(VIEWS), (id) => { state.view = id; render(); });

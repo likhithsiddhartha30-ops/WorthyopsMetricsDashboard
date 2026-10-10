@@ -97,7 +97,9 @@ const Sheets = (() => {
     const content = contentsByTitle.get(str(r['Content / Ad']).toLowerCase()) || null;
     const typeText = str(r['Lead Type']).toLowerCase();
     const origin = content ? content.channel : /paid/.test(typeText) ? 'paid' : /organic|content|inbound/.test(typeText) ? 'organic' : 'outbound';
-    const stage = STAGE_KEY[str(r['Stage']).toLowerCase()] || 'new';
+    let stage = STAGE_KEY[str(r['Stage']).toLowerCase()] || 'new';
+    // "Reached Out" = "Reached out" moves a new lead to Contacted ("Not reached out" doesn't match)
+    if (stage === 'new' && /^reached out$/i.test(str(r['Reached Out']))) stage = 'contacted';
     const owner = userByName(r['Owner']);
     const added = day(r['Date Added']) || Utils.toISO(Utils.today());
     const order = APP_CONFIG.leadStages.map((s) => s.key);
@@ -328,7 +330,7 @@ const Sheets = (() => {
 
   function stop() {
     clearInterval(pollTimer);
-    Store.setRemote(null);
+    if (!supaOn()) Store.setRemote(null); // with Supabase on, the remote hook is Supabase's, not ours
     setStatus({ state: 'off', error: '' });
   }
 
