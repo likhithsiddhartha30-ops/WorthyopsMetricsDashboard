@@ -259,12 +259,25 @@ const Supa = (() => {
       ['leads', leadRows, { onConflict: 'id' }],
       ['daily_activity', entryRows, { onConflict: 'user_id,date' }]
     ];
+    let skipped = 0;
+    let firstError = '';
     for (const [table, rows, opts] of steps) {
       if (!rows.length) continue;
       const { error } = await db().from(table).upsert(rows, opts);
-      if (error) throw error;
+      if (!error) continue;
+      // One bad row fails the whole batch, so retry row by row and skip the bad ones
+      let bad = 0;
+      for (const row of rows) {
+        const res = await db().from(table).upsert(row, opts);
+        if (res.error) {
+          bad++;
+          if (!firstError) firstError = res.error.message;
+        }
+      }
+      if (bad === rows.length) throw error; // nothing saved: a real problem (e.g. not an admin)
+      skipped += bad;
     }
-    return { content: contentRows.length, leads: leadRows.length, daily: entryRows.length };
+    return { content: contentRows.length, leads: leadRows.length, daily: entryRows.length, skipped, firstError };
   }
 
   // ---------- Data ----------

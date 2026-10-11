@@ -21,6 +21,7 @@ const Sheets = (() => {
   let flushing = false;
   let flushTimer = null;
   let pollTimer = null;
+  let visibilityHooked = false;
   const status = { state: 'off', last: null, error: '' };
   const statusListeners = new Set();
 
@@ -246,7 +247,8 @@ const Sheets = (() => {
       // Daily rows whose Team Member doesn't match a dashboard login can't be stored, so skip them
       const entries = (data.daily || []).map(rowToEntry).filter((e) => e.date && e.userId);
       const counts = await Supa.importSheet({ contents, leads, entries });
-      setStatus({ state: 'ok', last: new Date(), error: '', counts });
+      await Supa.pull(); // show the imported rows now, not on the next Supabase poll
+      setStatus({ state: 'ok', last: new Date(), error: counts.skipped ? `${counts.skipped} sheet row(s) could not be saved: ${counts.firstError}` : '', counts });
       return true;
     } catch (e) {
       setStatus({ state: 'error', error: e.message });
@@ -317,6 +319,10 @@ const Sheets = (() => {
       const ok = await pull();
       clearInterval(pollTimer);
       pollTimer = setInterval(pull, POLL_MS);
+      if (!visibilityHooked) {
+        visibilityHooked = true;
+        document.addEventListener('visibilitychange', () => { if (!document.hidden && isConfigured()) pull(); });
+      }
       return ok;
     }
     Store.setRemote(enqueue);
