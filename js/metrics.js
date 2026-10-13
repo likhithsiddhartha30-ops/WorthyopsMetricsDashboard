@@ -137,5 +137,51 @@ const Metrics = (() => {
     return entries.reduce((min, e) => (!min || e.date < min ? e.date : min), null);
   }
 
-  return { filter, totals, derive, delta, timeSeries, byMember, memberTargets, monthProgress, earliestDate };
+  // Lead stage reached -> activity it counts as (on the date the stage was reached)
+  const STAGE_COUNTS = {
+    contacted: (l) => ({ outreach: 1 }),
+    replied: (l) => ({ replies: 1 }),
+    booked: (l) => ({ callsBooked: 1 }),
+    attended: (l) => ({ callsShown: 1 }),
+    won: (l) => ({ dealsClosed: 1, revenue: Number(l.dealValue) || 0 }),
+    paid: (l) => ({ paid: 1, cashCollected: Number(l.amountPaid) || 0 })
+  };
+
+  /**
+   * Daily activity including what the lead list shows (e.g. leads from the
+   * Google Sheet). Per member + day, each number is the larger of the logged
+   * entry and the count from leads, so nothing is counted twice.
+   */
+  function activity(entries, leads) {
+    const fromLeads = new Map();
+    (leads || []).forEach((l) => {
+      const dates = l.stageDates || {};
+      Object.keys(STAGE_COUNTS).forEach((stage) => {
+        const date = dates[stage];
+        if (!date) return;
+        const key = `${l.ownerId || ''}|${date}`;
+        if (!fromLeads.has(key)) fromLeads.set(key, { userId: l.ownerId || '', date });
+        const row = fromLeads.get(key);
+        Object.entries(STAGE_COUNTS[stage](l)).forEach(([k, v]) => { row[k] = (row[k] || 0) + v; });
+      });
+    });
+    if (!fromLeads.size) return entries;
+
+    const out = entries.map((e) => {
+      const d = fromLeads.get(`${e.userId || ''}|${e.date}`);
+      if (!d) return e;
+      fromLeads.delete(`${e.userId || ''}|${e.date}`);
+      const merged = Object.assign({}, e);
+      KEYS().forEach((k) => { merged[k] = Math.max(Number(e[k]) || 0, d[k] || 0); });
+      return merged;
+    });
+    fromLeads.forEach((d, key) => {
+      const row = { id: `leads:${key}`, fromLeads: true, userId: d.userId, date: d.date };
+      KEYS().forEach((k) => { row[k] = d[k] || 0; });
+      out.push(row);
+    });
+    return out;
+  }
+
+  return { filter, totals, derive, delta, timeSeries, byMember, memberTargets, monthProgress, earliestDate, activity };
 })();

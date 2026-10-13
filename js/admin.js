@@ -44,12 +44,14 @@
   }
 
   function scope() {
-    const all = Store.getEntries();
+    const logged = Store.getEntries();
+    const all = Metrics.activity(logged, Store.getLeads()); // includes leads from the Google Sheet
     const range = Utils.resolveRange(state.range, Metrics.earliestDate(all));
     const userIds = state.member === 'all' ? null : [state.member];
     return {
       range,
       all,
+      logged: Metrics.filter(logged, { from: range.from, to: range.to, userIds }),
       cur: Metrics.filter(all, { from: range.from, to: range.to, userIds }),
       prev: Metrics.filter(all, { from: range.prevFrom, to: range.prevTo, userIds }),
       members: state.member === 'all' ? Store.getMembers() : Store.getMembers().filter((m) => m.id === state.member)
@@ -187,7 +189,7 @@
     const opts = {
       tbody: $('#entries'),
       pager: $('#entries-pager'),
-      entries: s.cur,
+      entries: s.logged,
       showMember: true,
       canEdit: true,
       state: entriesState,
@@ -205,12 +207,12 @@
     Dashboard.bindSortHeaders($('#entries-table'), entriesState, () => Dashboard.renderEntriesTable(opts));
     Dashboard.renderEntriesTable(opts);
     $('#btn-export-entries').onclick = () =>
-      Utils.download(`activity_${s.range.from}_to_${s.range.to}.csv`, Dashboard.entriesToCSV(s.cur), 'text/csv');
+      Utils.download(`activity_${s.range.from}_to_${s.range.to}.csv`, Dashboard.entriesToCSV(s.logged), 'text/csv');
   }
 
   // ---------- Members ----------
   function renderMembers() {
-    const all = Store.getEntries();
+    const all = Metrics.activity(Store.getEntries(), Store.getLeads());
     const from = Utils.toISO(Utils.addDays(Utils.today(), -29));
     const members = Store.getMembers();
     $('#members').innerHTML = members.length

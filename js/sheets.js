@@ -120,7 +120,7 @@ const Sheets = (() => {
       ownerId: owner ? owner.id : null,
       ownerName: owner ? '' : str(r['Owner']),
       stage,
-      message: str(r['Outreach Message']),
+      message: str(r['Outreach Message']) || str(r['Personalized Insta DM']),
       followUps: Math.round(num(r['Follow-ups'])),
       lastContactAt: day(r['Last Contact']),
       nextFollowUpAt: day(r['Next Follow-up']),

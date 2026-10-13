@@ -36,7 +36,7 @@
   const myLeads = () => Store.getLeads().filter((l) => l.ownerId === me.id);
 
   function scope() {
-    const mine = Metrics.filter(Store.getEntries(), { userId: me.id });
+    const mine = Metrics.filter(Metrics.activity(Store.getEntries(), myLeads()), { userId: me.id });
     const range = Utils.resolveRange(state.range, Metrics.earliestDate(mine));
     return {
       range,
@@ -151,10 +151,12 @@
   }
 
   function renderEntries(s) {
+    // Only what was logged here (not the counts that come from leads), so every row is editable
+    const logged = Metrics.filter(Store.getEntries(), { userId: me.id, from: s.range.from, to: s.range.to });
     const opts = {
       tbody: $('#entries'),
       pager: $('#entries-pager'),
-      entries: s.cur,
+      entries: logged,
       showMember: false,
       canEdit: true,
       state: entriesState,
@@ -169,7 +171,7 @@
     Dashboard.bindSortHeaders($('#entries-table'), entriesState, () => Dashboard.renderEntriesTable(opts));
     Dashboard.renderEntriesTable(opts);
     $('#btn-export').onclick = () =>
-      Utils.download(`my-activity_${s.range.from}_to_${s.range.to}.csv`, Dashboard.entriesToCSV(s.cur), 'text/csv');
+      Utils.download(`my-activity_${s.range.from}_to_${s.range.to}.csv`, Dashboard.entriesToCSV(logged), 'text/csv');
   }
 
   function renderAccount() {
